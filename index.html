@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>An-225 Mrija – model z překližky (rybí kostra)</title>
+<style>
+:root{--bg:#f6f5f1;--surface:#fff;--neutral:#ecebe6;--text:#1f1f1d;--text2:#5f5e5a;--muted:#888780;--border:rgba(0,0,0,.1);--accent:#185FA5;--radius:8px;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#191919;--surface:#1f1f1f;--neutral:#2a2a28;--text:#eeeeec;--text2:#b4b2a9;--muted:#888780;--border:rgba(255,255,255,.1);--accent:#85B7EB}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+header{padding:16px 20px 8px;max-width:1400px;margin:0 auto}
+h1{font-size:20px;font-weight:500;margin:0}
+header p{margin:4px 0 0;color:var(--text2);font-size:14px}
+header a{color:var(--accent)}
+main{max-width:1400px;margin:0 auto;padding:8px 20px 32px;display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px}
+@media (max-width:860px){main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:14px 16px}
+label.ctl{display:block;font-size:13px;color:var(--text2);margin-bottom:12px}
+label.ctl b{color:var(--text);font-weight:500}
+input[type=range],select{width:100%;margin-top:4px}
+select,button{font:inherit;font-size:13px;padding:6px 10px;border-radius:var(--radius);border:.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}
+button:hover{background:var(--neutral)}
+#wrap{position:relative;height:62vh;min-height:360px;border-radius:12px;background:var(--neutral);touch-action:none;overflow:hidden}
+#hint{position:absolute;top:8px;left:10px;font-size:12px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat{background:var(--neutral);border-radius:var(--radius);padding:10px 12px}
+.stat .l{font-size:12px;color:var(--text2)}.stat .v{font-size:16px;font-weight:500}.stat .s{font-size:12px;color:var(--text2)}
+#leg label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2)}
+#leg .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+h2{font-size:15px;font-weight:500;margin:16px 0 6px}
+svg{display:block;width:100%;max-width:760px;color:var(--text2)}
+.note{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>An-225 Mrija – model z 3mm překližky, konstrukce „rybí kostra“</h1>
+  <p>Parametrický 3D náhled pro ladění tvaru a konstrukce. Nastavení se ukládá do adresy stránky – zkopírujte odkaz a pošlete ho.
+  Diskuse: <a id="lnkDisc" href="https://github.com/miloslavPansky/an225-mriya-model/discussions">GitHub Discussions</a> ·
+  <a href="https://github.com/miloslavPansky/an225-mriya-model/issues">Issues</a> ·
+  <a href="https://github.com/miloslavPansky/an225-mriya-model/blob/main/README.md">Stav projektu</a></p>
+</header>
+<main>
+  <aside>
+    <div class="card">
+      <label class="ctl">Délka modelu <b id="oL"></b><input type="range" id="L" min="50" max="120" step="5"></label>
+      <label class="ctl">Rozestup žeber <b id="oP"></b><input type="range" id="P" min="12" max="25" step="1"></label>
+      <label class="ctl">Šířka pásnice nosníku <b id="oCW"></b><input type="range" id="CW" min="10" max="24" step="2"></label>
+      <label class="ctl">Tloušťka materiálu <b id="oT"></b><input type="range" id="T" min="2.5" max="4" step="0.1"></label>
+      <label class="ctl">Vrstvy páteř / stojina nosníku<select id="S"><option value="2,2">2 / 2</option><option value="3,2">3 / 2</option><option value="2,1">2 / 1</option></select></label>
+      <label class="ctl">Pracovní plocha frézy<select id="B"><option value="1000,650">1000 × 650 mm</option><option value="297,210">A4 (karton)</option><option value="600,400">600 × 400 mm</option></select></label>
+      <div class="grid2">
+        <div class="stat"><div class="l">Měřítko</div><div class="v" id="sS">-</div><div class="s" id="sD">-</div></div>
+        <div class="stat"><div class="l">Díly / desky</div><div class="v" id="sN">-</div><div class="s" id="sX">-</div></div>
+      </div>
+      <h2>Skupiny dílů</h2>
+      <div id="leg" class="grid2"></div>
+      <div class="row"><button id="copy">Kopírovat odkaz s nastavením</button></div>
+      <p class="note" id="copied"></p>
+    </div>
+  </aside>
+  <section>
+    <div id="wrap"><canvas id="cv"></canvas><div id="hint">Tažením otáčej, kolečkem / dvěma prsty přibliž</div></div>
+    <div class="row">
+      <button data-v="photo">Jako foto</button><button data-v="iso">3D</button><button data-v="side">Bok</button><button data-v="top">Shora</button>
+      <button data-v="front">Zepředu</button><button data-v="tail">Ocas</button><button data-v="root">Kořen křídla</button><button data-v="spar">Jen nosník + páteř</button>
+    </div>
+    <h2>Bokorys</h2><svg id="sv1" viewBox="0 0 360 92"></svg>
+    <h2>Půdorys</h2><svg id="sv2" viewBox="0 0 360 290"></svg>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/model.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
