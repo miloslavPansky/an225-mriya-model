@@ -21,11 +21,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Syntaxe JS
         run: node --check js/model.js && node --check js/app.js
@@ -56,13 +56,13 @@ jobs:
 
       - name: Náhled (snímek obrazovky)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: preview
           path: preview.png
           if-no-files-found: ignore
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         if: github.event_name != 'pull_request'
         with:
           path: _site
@@ -79,4 +79,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
