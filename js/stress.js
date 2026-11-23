@@ -27,10 +27,15 @@
     const stabS = y => { const c = st.chord(y), M = F * (st.zTop - st.zStab) * k, s = M / (c * st.t ** 2 / 6); return { u: s / fm, s }; };
     const finS = z => { if (z < fn.zStab) return { u: 0, s: 0 }; const c = fn.chord(z), M = F * (fn.zTop - z) * k, s = M / (c * fn.t ** 2 / 6); return { u: s / fm, s }; };
     const finJ = () => { const j = S.finJoint, M = F * (fn.zTop - fn.zStab) * k, Wg = j.L * j.b ** 2 / 6 + j.extra, s = M / Wg; return { u: s / fp, s, what: j.what }; };
-    const spineV = x => { if (x < sp.xSupport) return { u: 0, s: 0 }; const h = sp.hNet(x), M = 2 * F * Math.max(0, sp.xFin - x) * k, s = M / (sp.t * h * h / 6); return { u: s / fm, s }; };
+    // ocas: síla z kýlovek vstupuje do páteře přes kořen výškovky (xA0…xA1) – za ním páteř nenese nic
+    const spineV = x => {
+      if (x < sp.xSupport) return { u: 0, s: 0 };
+      const f = sp.xA1 != null ? Math.min(1, Math.max(0, (sp.xA1 - x) / (sp.xA1 - sp.xA0))) : 1;
+      const h = sp.hNet(x), M = 2 * F * Math.max(0, sp.xFin - x) * k * f, s = M / (sp.t * h * h / 6); return { u: s / fm, s };
+    };
     const pyl = q => {
       const Mr = F * q.armRoot, sr = Mr / (q.Lp * q.t ** 2 / 6);                 // ohyb pylonu u spodku křídla
-      const Mj = F * q.arm, sj = Mj / (2 * q.Lt * q.ht ** 2 / 6);                  // odtržení lepení jazýčku (2 plochy)
+      const Mj = F * q.arm, sj = Mj / (q.Wglue != null ? q.Wglue : 2 * q.Lt * q.ht ** 2 / 6); // odtržení lepení jazýčku (2 plochy)
       return { root: { u: sr / fm, s: sr }, joint: { u: sj / fp, s: sj, what: q.what } };
     };
     const gearC = () => {

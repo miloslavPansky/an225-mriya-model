@@ -42,10 +42,10 @@ jobs:
           # číslo verze do patičky + cache-busting skriptů (Pages cachuje 10 min)
           sed -i \
             -e "s|<span id=\"build\">lokální</span>|<span id=\"build\"><a href=\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}\">${VER}</a></span>|" \
-            -e "s|src=\"js/model.js\"|src=\"js/model.js?v=${SHORT}\"|" \
-            -e "s|src=\"js/app.js\"|src=\"js/app.js?v=${SHORT}\"|" \
+            -e "s|src=\"js/\([a-z0-9-]*\)\.js\"|src=\"js/\1.js?v=${SHORT}\"|g" \
             _site/index.html
           grep -q "js/app.js?v=${SHORT}" _site/index.html
+          grep -q "js/an225-ref.js?v=${SHORT}" _site/index.html
           touch _site/.nojekyll
 
       - name: Kouřový test v prohlížeči

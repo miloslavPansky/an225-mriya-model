@@ -1,6 +1,7 @@
 // Kontrola geometrie bez prohlížeče: node tests/model.test.mjs
 // Načte js/model.js, spustí buildModel pro několik nastavení a ověří, že
-// geometrie je platná a (pro výchozí nastavení) žádný díl nepřesahuje stůl frézy − 20 mm.
+// geometrie je platná a (pro výchozí nastavení) žádný díl nepřesahuje stůl frézy − 20 mm
+// a není užší než pravidlo M4; spočte namáhání pro všechny zatěžovací stavy.
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
@@ -36,7 +37,7 @@ for (const c of CASES) {
   const [nS, nW] = st.S.split(',').map(Number), bed = st.B.split(',').map(Number);
   const k = 10 * st.L / 84;
   const before = failed;
-  const S = { parts: 0, counted: 0, joints: 0, over: [] };
+  const S = { parts: 0, counted: 0, joints: 0, over: [], thin: [] };
   const lim = [bed[0] - 20, bed[1] - 20];
   const checkSize = (name, w, h) => {
     const L = Math.max(w, h), Sm = Math.min(w, h);
@@ -57,6 +58,7 @@ for (const c of CASES) {
         w = (Math.max(...xs) - Math.min(...xs)) * k; h = (Math.max(...ys) - Math.min(...ys)) * k;
       }
       checkSize(o.name, w, h);
+      if (c.checkBed && Math.min(w, h) < (M.RULES ? M.RULES.minWidth : 0) - 1e-6) S.thin.push(`${o.name || g} ${w.toFixed(1)}×${h.toFixed(1)} mm`);
     },
     joint(p) { S.joints++; if (!finite(p)) fail('spoj s neplatnou polohou'); },
     count(g, name, w, h, n) { S.counted += n; if (![w, h, n].every(Number.isFinite)) fail(`count ${name}: neplatné hodnoty`); else checkSize(name, w, h); },
@@ -78,6 +80,7 @@ for (const c of CASES) {
   }
   if (S.parts === 0) fail('nevznikl žádný díl');
   if (c.checkBed && S.over.length) fail(`díly přes pracovní plochu − 20 mm: ${S.over.join(', ')}`);
+  if (S.thin.length) fail(`díly užší než ${M.RULES.minWidth} mm (pravidlo M4): ${[...new Set(S.thin)].slice(0, 6).join(', ')}`);
   console.log(`${failed === before ? '✓' : '✗'} ${c.name}: ${S.counted} dílů, ${S.joints} spojů${S.over.length && !c.checkBed ? ` (přes limit: ${S.over.length})` : ''}`);
   if (S.stress) console.log('    namáhání (výchozí nastavení):\n      ' + S.stress.join('\n      '));
 }

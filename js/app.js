@@ -116,8 +116,8 @@
     photo: () => { setVis(); view(-0.45, -0.22, 1.55); }, iso: () => { setVis(); view(-0.7, 0.4, 1.9); },
     side: () => { setVis(); view(0, 0.01, 1.9); }, top: () => { setVis(); view(0, 1.55, 2.0); }, front: () => { setVis(); view(-Math.PI / 2, 0.05, 1.9); },
     tail: () => { setVis(); view(-1.0, 0.35, 0.55, [78, 0, 11]); },
-    root: () => { setVis(['sp', 'sw', 'wg', 'rf', 'jn', 'en']); view(-0.35, 0.55, 0.5, [34, 0, 9]); },
-    spar: () => { setVis(['sp', 'sw', 'rf']); view(-0.5, 0.5, 1.2, [40, 0, 9]); },
+    root: () => { setVis(['sp', 'sw', 'wg', 'rf', 'jn', 'en']); view(-0.35, 0.55, 0.5, [31, 6, 8.5]); },
+    spar: () => { setVis(['sp', 'sw', 'rf']); view(-0.5, 0.5, 1.2, [38, 0, 8]); },
   };
   window.AN225_VIEW = n => VIEWS[n]();
 
@@ -171,24 +171,25 @@
     const G = GEO, W = M.WING, S = M.STAB, st = 'fill="none" stroke="currentColor" stroke-width="0.8"', pp = a => a.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ');
     const s = 348 / 86, X = x => 6 + x * s, Z = z => 86 - z * s; let o = '';
     o += `<line x1="0" y1="${Z(0)}" x2="360" y2="${Z(0)}" stroke="currentColor" stroke-width="0.5" stroke-dasharray="3 3"/>`;
-    const ft = [], fb = []; for (let x = 0; x <= 84; x += 0.4) { ft.push([X(x), Z(M.fTop(x))]); fb.push([X(x), Z(M.fBot(x))]); }
+    const ft = [], fb = []; for (let x = 0; x <= M.XE + 1e-6; x += 0.25) { ft.push([X(x), Z(G.top(x))]); fb.push([X(x), Z(M.fBot(x))]); }
     o += `<polygon points="${pp(ft.concat(fb.reverse()))}" ${st}/>`;
     o += `<polygon points="${pp(G.kp.map(p => [X(p[0]), Z(p[1])]))}" ${st}/>`;
-    o += `<polygon points="${pp(M.airfoil(W.le(0), W.c(0), W.z(0), G.wth(0), 0.02).map(p => [X(p[0]), Z(p[1])]))}" ${st}/>`;
-    o += `<line x1="${X(S.le(0))}" y1="${Z(G.SZ)}" x2="${X(S.le(16.3) + S.c(16.3))}" y2="${Z(G.SZ + G.sdh * 16.3)}" stroke="currentColor"/>`;
+    o += `<polygon points="${pp(G.foil(0).map(p => [X(p[0]), Z(p[1])]))}" ${st}/>`;
+    o += `<rect x="${X(S.le(0))}" y="${Z(G.SZ + G.tS / 2)}" width="${(S.te(S.semi) - S.le(0)) * s}" height="${G.tS * s}" ${st}/>`;
     for (const n of G.EN.filter(n => n.e > 0)) { const t = [], b = []; for (let x = n.xa; x <= n.xb; x += 0.25) { t.push([X(x), Z(n.ze + n.r(x))]); b.push([X(x), Z(n.ze - n.r(x))]); } o += `<polygon points="${pp(t.concat(b.reverse()))}" ${st}/>`; }
-    for (const c of G.wcx) o += `<circle cx="${X(c)}" cy="${Z(0.63)}" r="${0.63 * s}" ${st}/>`;
-    for (const c of [-0.6, 0.6]) o += `<circle cx="${X(G.xn + c)}" cy="${Z(0.6)}" r="${0.6 * s}" ${st}/>`;
+    for (const c of G.wcx) o += `<circle cx="${X(c)}" cy="${Z(G.wr)}" r="${G.wr * s}" ${st}/>`;
+    for (const c of [-0.6, 0.6]) o += `<circle cx="${X(G.xn + c)}" cy="${Z(G.nr)}" r="${G.nr * s}" ${st}/>`;
     $('sv1').innerHTML = underlay('side') + o;
     const t = 3.15, PX = x => 10 + x * t, PY = y => 145 - y * t; o = '';
-    const fu = [], fl = []; for (let x = 0; x <= 84; x += 0.5) { const w = M.fW(x) + M.SPW * M.spn(x); fu.push([PX(x), PY(w)]); fl.push([PX(x), PY(-w)]); }
+    const fu = [], fl = []; for (let x = 0; x <= M.XE + 1e-6; x += 0.25) { const w = M.fW(x); fu.push([PX(x), PY(w)]); fl.push([PX(x), PY(-w)]); }
     o += `<polygon points="${pp(fu.concat(fl.reverse()))}" ${st}/>`;
+    const ys = []; for (let a = 0; a < W.semi - 1.6; a += 1.0) ys.push(a); for (let a = W.semi - 1.6; a <= W.semi + 1e-6; a += 0.1) ys.push(a);
     for (const sg of [1, -1]) {
-      const w = []; for (let a = 0; a <= 44.2; a += 2.21) w.push([PX(W.le(a)), PY(sg * a)]); for (let a = 44.2; a >= 0; a -= 2.21) w.push([PX(W.le(a) + W.c(a)), PY(sg * a)]);
+      const w = ys.map(a => [PX(W.le(a)), PY(sg * a)]).concat(ys.slice().reverse().map(a => [PX(W.te(a)), PY(sg * a)]));
       o += `<polygon points="${pp(w)}" ${st}/>`;
-      const h = []; for (let a = 0; a <= 16.3; a += 1.63) h.push([PX(S.le(a)), PY(sg * a)]); for (let a = 16.3; a >= 0; a -= 1.63) h.push([PX(S.le(a) + S.c(a)), PY(sg * a)]);
+      const h = [[PX(S.le(0)), PY(0)], [PX(S.le(S.semi)), PY(sg * S.semi)], [PX(S.te(S.semi)), PY(sg * S.semi)], [PX(S.te(0)), PY(0)]];
       o += `<polygon points="${pp(h)}" ${st}/>`;
-      o += `<line x1="${PX(Math.min(...G.kp.map(p => p[0])))}" y1="${PY(sg * 16.3)}" x2="${PX(Math.max(...G.kp.map(p => p[0])))}" y2="${PY(sg * 16.3)}" stroke="currentColor" stroke-width="2"/>`;
+      o += `<line x1="${PX(Math.min(...G.kp.map(p => p[0])))}" y1="${PY(sg * S.semi)}" x2="${PX(Math.max(...G.kp.map(p => p[0])))}" y2="${PY(sg * S.semi)}" stroke="currentColor" stroke-width="2"/>`;
     }
     for (const n of G.EN) { const tt = [], b = []; for (let x = n.xa; x <= n.xb; x += 0.25) { tt.push([PX(x), PY(n.e + n.r(x))]); b.push([PX(x), PY(n.e - n.r(x))]); } o += `<polygon points="${pp(tt.concat(b.reverse()))}" ${st}/>`; }
     $('sv2').innerHTML = underlay('plan') + o;
