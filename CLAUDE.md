@@ -12,7 +12,8 @@ Parametrický model An-225 v konstrukci „rybí kostra“ pro výrobu z 3mm př
   - Díl = 2D polygon v rovině (O, U, V), tloušťka = materiál, vrstvy přes `lam(..., offsets)`.
   - Silueta trupu: `SHAPE.top/bot/halfWidth` (PCHIP body), průřez = superelipsa (horní n=2,3, dolní n=3,2) + kryty podvozku `spn()`.
 - `js/app.js` – three.js r128 (UMD z cdnjs), UI, URL hash stav, bokorys/půdorys SVG. `window.AN225_VIEW(name)` pro pohledy (použitelné pro headless snímky).
-- Bez build kroku; GitHub Pages servíruje `main` / root.
+- Bez build kroku v repu; nasazení dělá GitHub Actions (`.github/workflows/pages.yml`): `node tests/model.test.mjs` → sestavení `_site` (verze v patičce `#build`, `?v=` u skriptů) → `tests/smoke.sh` v headless Chrome → deploy Pages. Push do `main` = redeploy; rozbitý test nasazení zastaví.
+- `tests/model.test.mjs` obsahuje kopii výchozích hodnot `DEF` z `app.js` – při změně je sjednoť.
 
 ## Konstrukční pravidla (dodržovat)
 - Pouze hřebenové spoje (zářez od hrany), žádné vnitřní výřezy, pokud to není nezbytné.

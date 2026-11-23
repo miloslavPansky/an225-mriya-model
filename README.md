@@ -14,7 +14,7 @@ Parametrický 3D model letadla Antonov An-225 Mrija pro výrobu z 3mm překližk
 | Silueta | upravena podle fotografie UR-82060; přesnost omezená (perspektivní foto, ne výkres) |
 | Materiál | 3mm překližka (doporučen topol, alternativně bříza); karton opuštěn |
 | Výroba | CNC fréza, pracovní plocha 1000 × 650 mm |
-| 3D vizualizace | hotovo (tento repozitář) |
+| 3D vizualizace | hotovo (tento repozitář), automatický test a nasazení přes GitHub Actions |
 | Výrobní podklady (DXF) | **nezačato** – čeká na vstupy, viz Otevřené body |
 
 ## Rozměry a měřítko
@@ -91,15 +91,28 @@ Souřadnice v kódu: metry skutečného letadla, `x` od špičky přídě, `y` d
 
 ## Struktura repozitáře
 ```
-index.html        stránka (GitHub Pages)
-js/model.js       parametrická geometrie (silueta, díly, spoje) – bez závislosti na three.js
-js/app.js         UI, 3D render (three.js r128 z cdnjs), bokorys/půdorys, URL stav
-docs/img/         náhledy
-CLAUDE.md         kontext pro Claude Code
+index.html                 stránka (GitHub Pages)
+js/model.js                parametrická geometrie (silueta, díly, spoje) – bez závislosti na three.js
+js/app.js                  UI, 3D render (three.js r128 z cdnjs), bokorys/půdorys, URL stav
+tests/model.test.mjs       kontrola geometrie v Node (platné polygony, díly ≤ stůl − 20 mm)
+tests/smoke.sh             kouřový test stránky v headless Chrome + snímek
+.github/workflows/pages.yml  CI: test → build → deploy na GitHub Pages
+docs/img/                  náhledy
+CLAUDE.md                  kontext pro Claude Code
 ```
 
 ## Lokální spuštění
 Stačí otevřít `index.html` v prohlížeči (nebo `python3 -m http.server`).
+Test geometrie: `node tests/model.test.mjs`.
+
+## CI / nasazení
+Každý push do `main` spustí workflow **Pages** (`.github/workflows/pages.yml`):
+1. kontrola syntaxe JS a geometrie (`tests/model.test.mjs`) – při chybě se nenasazuje,
+2. sestavení `_site` – do patičky se vloží verze (commit + čas), skripty dostanou `?v=<commit>` proti cache,
+3. kouřový test v headless Chrome (model se musí vykreslit), snímek se uloží jako artefakt `preview`,
+4. nasazení na GitHub Pages (zdroj Pages = GitHub Actions).
+
+Pull requesty do `main` se jen testují. Ruční spuštění: Actions → Pages → Run workflow.
 
 ## Galerie
 | | |

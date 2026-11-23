@@ -1,0 +1,82 @@
+# Test + build + nasazení 3D vizualizace na GitHub Pages.
+# Každý push do main: kontrola geometrie (Node) → sestavení _site → kouřový test
+# v headless Chrome → deploy. Pull requesty se jen testují (bez nasazení).
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Syntaxe JS
+        run: node --check js/model.js && node --check js/app.js
+
+      - name: Kontrola geometrie (buildModel)
+        run: node tests/model.test.mjs
+
+      - name: Sestavení _site
+        run: |
+          SHORT="${GITHUB_SHA::7}"
+          VER="${SHORT} · $(date -u +'%d. %m. %Y %H:%M') UTC"
+          mkdir -p _site
+          cp -r index.html js docs _site/
+          # číslo verze do patičky + cache-busting skriptů (Pages cachuje 10 min)
+          sed -i \
+            -e "s|<span id=\"build\">lokální</span>|<span id=\"build\"><a href=\"${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}\">${VER}</a></span>|" \
+            -e "s|src=\"js/model.js\"|src=\"js/model.js?v=${SHORT}\"|" \
+            -e "s|src=\"js/app.js\"|src=\"js/app.js?v=${SHORT}\"|" \
+            _site/index.html
+          grep -q "js/app.js?v=${SHORT}" _site/index.html
+          touch _site/.nojekyll
+
+      - name: Kouřový test v prohlížeči
+        run: |
+          python3 -m http.server 8000 --directory _site >/dev/null 2>&1 &
+          sleep 1
+          bash tests/smoke.sh http://localhost:8000/ preview.png
+
+      - name: Náhled (snímek obrazovky)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview
+          path: preview.png
+          if-no-files-found: ignore
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
