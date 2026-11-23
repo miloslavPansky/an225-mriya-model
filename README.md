@@ -7,7 +7,7 @@ Parametrický 3D model letadla Antonov An-225 Mrija pro výrobu z 3mm březové 
 ![Jako foto](docs/img/01_jako_foto.jpg)
 <sub>Náhledy v `docs/img/` jsou ze stavu před úpravou geometrie podle výkresu.</sub>
 
-## Stav projektu (k 24. 11. 2026)
+## Stav projektu (k 23. 11. 2026)
 
 | Oblast | Stav |
 |---|---|
