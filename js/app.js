@@ -7,13 +7,14 @@
     ['sp', 'Páteř', 0x7A5A32], ['rb', 'Trup – žebra', 0xD9B781], ['sw', 'Nosník – stojiny', 0x8A6438], ['wg', 'Křídla – žebra', 0xC29A60],
     ['en', 'Gondoly + pylony', 0x8E8A84], ['tl', 'Ocasní plochy', 0xA8784A], ['gr', 'Podvozek', 0x55524D], ['rf', 'Pásnice + výztuhy', 0x1D9E75], ['jn', 'Spoje', 0xE24B4A]];
   const hex = c => '#' + c.toString(16).padStart(6, '0');
-  const DEF = { L: 80, P: 15, CW: 14, T: 3, S: '2,2', B: '1000,650' };
+  const DEF = { L: 80, P: 15, CW: 14, T: 3, S: '2,2', B: '1000,650', SM: 'groups', UL: 1 };
+  const STRK = ['S', 'B', 'SM'];
   const state = Object.assign({}, DEF);
   const vis = {}; GDEF.forEach(g => vis[g[0]] = true);
 
   // stav z URL (#L=80&P=15...)
   for (const kv of location.hash.replace(/^#/, '').split('&')) {
-    const [k, v] = kv.split('='); if (k in DEF && v) state[k] = k === 'S' || k === 'B' ? decodeURIComponent(v) : +v;
+    const [k, v] = kv.split('='); if (k in DEF && v) state[k] = STRK.includes(k) ? decodeURIComponent(v) : +v;
   }
   ['L', 'P', 'CW', 'T', 'S', 'B'].forEach(id => $(id).value = state[id]);
   const unit = { L: ' cm', P: ' mm', CW: ' mm', T: ' mm' };
@@ -35,7 +36,7 @@
     const geo = new THREE.ExtrudeGeometry(sh, { depth: Tm, bevelEnabled: false, curveSegments: 2 }); geo.translate(0, 0, -Tm / 2);
     const u = t3(U), v = t3(V), n = new THREE.Vector3().crossVectors(u, v), m = new THREE.Matrix4().makeBasis(u, v, n);
     m.setPosition((O[0] - 42) * k, O[2] * k, O[1] * k); geo.applyMatrix4(m);
-    GR[g].add(new THREE.Mesh(geo, MAT[g]));
+    const me = new THREE.Mesh(geo, MAT[g]); me.userData = { g, name: o.name || '' }; GR[g].add(me);
     GR[g].add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), EDGE));
     if (o.noCount) return;
     let w, h;
@@ -49,14 +50,15 @@
     if (L > ST.bed[0] - 20 || S > ST.bed[1] - 20) ST.over += n;
     if (L > ST.mx[0]) ST.mx = [L, S, name];
   }
-  function addJoint(p, s) {
+  function addJoint(p, s, kind) {
     const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), MAT.jn), q = Math.max(6, 4 * Tm) * (s || 1);
-    m.scale.set(q, q, q); m.position.set((p[0] - 42) * K, p[2] * K, p[1] * K); GR.jn.add(m);
+    m.scale.set(q, q, q); m.position.set((p[0] - 42) * K, p[2] * K, p[1] * K); m.userData = { g: 'jn', name: '', kind: kind || '' }; GR.jn.add(m);
   }
 
+  function saveHash() { history.replaceState(null, '', '#' + Object.entries(state).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&')); }
   function build() {
     Object.assign(state, { L: +$('L').value, P: +$('P').value, CW: +$('CW').value, T: +$('T').value, S: $('S').value, B: $('B').value });
-    history.replaceState(null, '', '#' + Object.entries(state).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&'));
+    saveHash();
     const [nS, nW] = state.S.split(',').map(Number), bed = state.B.split(',').map(Number);
     K = 10 * state.L / 84; Tm = state.T;
     if (ROOT) { SC.remove(ROOT); ROOT.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
@@ -70,7 +72,7 @@
     $('sD').textContent = Math.round(84 * k / 10) + ' × ' + Math.round(88.4 * k / 10) + ' × ' + Math.round(18.1 * k / 10) + ' cm';
     $('sN').textContent = ST.n + ' dílů · ~' + Math.ceil(ST.area / ((bed[0] - 20) * (bed[1] - 20) * 0.65)) + ' desek';
     $('sX').textContent = (ST.over ? 'Přes limit: ' + ST.over + ' · ' : 'Vše se vejde · ') + 'max ' + Math.round(ST.mx[0]) + '×' + Math.round(ST.mx[1]) + ' mm (' + ST.mx[2] + ')';
-    silhouette(); draw();
+    silhouette(); applyStress();
   }
 
   function init() {
@@ -119,6 +121,51 @@
   };
   window.AN225_VIEW = n => VIEWS[n]();
 
+  // ---------- mapa namáhání ----------
+  const SA = window.AN225_STRESS, GRAY = [0.78, 0.77, 0.74], VMAT = new THREE.MeshLambertMaterial({ vertexColors: true });
+  $('SM').innerHTML = '<option value="groups">Vypnuto – barvy skupin</option>' + SA.LC.map(l => `<option value="${l.id}">${l.name}</option>`).join('') + '<option value="env">Obálka – maximum ze všech stavů</option>';
+  $('SM').value = state.SM;
+  function applyStress() {
+    const mode = state.SM, STR = mode === 'groups' ? null : mode === 'env' ? SA.envelope(GEO.struct) : SA.analyze(GEO.struct, mode);
+    ROOT.traverse(o => {
+      const ud = o.userData; if (!o.isMesh || !ud || !ud.g) return;
+      if (!STR) { o.material = MAT[ud.g]; return; }
+      const pos = o.geometry.attributes.position, n = pos.count, col = new Float32Array(n * 3);
+      if (ud.g === 'jn') {
+        const u = STR.field('jn', '', [o.position.x / K + 42, o.position.z / K, o.position.y / K], ud.kind), c = u == null ? GRAY : SA.color(u);
+        for (let i = 0; i < n; i++) col.set(c, i * 3);
+      } else for (let i = 0; i < n; i++) {
+        const u = STR.field(ud.g, ud.name, [pos.getX(i) / K + 42, pos.getZ(i) / K, pos.getY(i) / K]);
+        col.set(u == null ? GRAY : SA.color(u), i * 3);
+      }
+      o.geometry.setAttribute('color', new THREE.BufferAttribute(col, 3)); o.material = VMAT;
+    });
+    $('smBox').hidden = !STR;
+    if (STR) $('smTab').innerHTML = '<tr><th>Místo</th><th>σ</th><th>Využití</th></tr>' + STR.crit.map(c => {
+      const pc = Math.round(c.u * 100), col = SA.color(c.u).map(v => Math.round(v * 255)).join(',');
+      return `<tr title="${c.what}"><td>${c.label}</td><td>${c.s.toFixed(1).replace('.', ',')} MPa</td><td><span class="pill" style="background:rgb(${col})">${pc} %</span></td></tr>`;
+    }).join('');
+    draw();
+  }
+
+  // ---------- výkres jako podklad (načítá se ze zdroje, není součástí repozitáře) ----------
+  const DRAW_URL = 'https://drawingdatabase.com/wp-content/uploads/2014/03/An-225-3.jpg';
+  function underlay(view) {
+    if (!state.UL) return '';
+    // kalibrace viz js/an225-ref.js: bokorys 19,83 px/m, příď u=162, země v=425; půdorys 20,04/20,25 px/m, příď v=283, osa u=1922
+    // ořez (px výkresu): jen daný pohled, bez sousedních pohledů a detailů
+    let tr, clip;
+    if (view === 'side') { const q = (348 / 86) / 19.83; tr = `translate(${6 - 162 * q} ${86 - 425 * q}) scale(${q})`; clip = ['100,30 1880,30 1880,440 100,440']; }
+    else {
+      tr = `matrix(0 ${-3.15 / 20.25} ${3.15 / 20.04} 0 ${10 - 3.15 * 283 / 20.04} ${145 + 3.15 * 1922 / 20.25})`;
+      clip = ['1880,272 1965,272 2015,420 2015,1995 1835,1995 1835,420',                       // trup
+        '1842,650 1350,950 1300,1070 1030,1232 1030,1350 1700,1160 2144,1160 2815,1350 2815,1232 2540,1090 2500,976 2002,650', // křídla + gondoly
+        '1870,1590 1600,1790 1600,1995 2250,1995 2250,1790 1975,1590'];                        // ocasní plochy
+    }
+    return `<defs><clipPath id="cl_${view}" clipPathUnits="userSpaceOnUse">${clip.map(p => `<polygon points="${p}"/>`).join('')}</clipPath></defs>` +
+      `<g transform="${tr}" class="ul"><image href="${DRAW_URL}" width="2862" height="1983" clip-path="url(#cl_${view})" preserveAspectRatio="none"/></g>`;
+  }
+
   // ---------- bokorys / půdorys ----------
   function silhouette() {
     const G = GEO, W = M.WING, S = M.STAB, st = 'fill="none" stroke="currentColor" stroke-width="0.8"', pp = a => a.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ');
@@ -132,7 +179,7 @@
     for (const n of G.EN.filter(n => n.e > 0)) { const t = [], b = []; for (let x = n.xa; x <= n.xb; x += 0.25) { t.push([X(x), Z(n.ze + n.r(x))]); b.push([X(x), Z(n.ze - n.r(x))]); } o += `<polygon points="${pp(t.concat(b.reverse()))}" ${st}/>`; }
     for (const c of G.wcx) o += `<circle cx="${X(c)}" cy="${Z(0.63)}" r="${0.63 * s}" ${st}/>`;
     for (const c of [-0.6, 0.6]) o += `<circle cx="${X(G.xn + c)}" cy="${Z(0.6)}" r="${0.6 * s}" ${st}/>`;
-    $('sv1').innerHTML = o;
+    $('sv1').innerHTML = underlay('side') + o;
     const t = 3.15, PX = x => 10 + x * t, PY = y => 145 - y * t; o = '';
     const fu = [], fl = []; for (let x = 0; x <= 84; x += 0.5) { const w = M.fW(x) + M.SPW * M.spn(x); fu.push([PX(x), PY(w)]); fl.push([PX(x), PY(-w)]); }
     o += `<polygon points="${pp(fu.concat(fl.reverse()))}" ${st}/>`;
@@ -144,12 +191,14 @@
       o += `<line x1="${PX(Math.min(...G.kp.map(p => p[0])))}" y1="${PY(sg * 16.3)}" x2="${PX(Math.max(...G.kp.map(p => p[0])))}" y2="${PY(sg * 16.3)}" stroke="currentColor" stroke-width="2"/>`;
     }
     for (const n of G.EN) { const tt = [], b = []; for (let x = n.xa; x <= n.xb; x += 0.25) { tt.push([PX(x), PY(n.e + n.r(x))]); b.push([PX(x), PY(n.e - n.r(x))]); } o += `<polygon points="${pp(tt.concat(b.reverse()))}" ${st}/>`; }
-    $('sv2').innerHTML = o;
+    $('sv2').innerHTML = underlay('plan') + o;
   }
 
   // ---------- události ----------
   ['L', 'P', 'CW', 'T'].forEach(id => { $(id).addEventListener('input', showVals); $(id).addEventListener('change', build); });
   ['S', 'B'].forEach(id => $(id).addEventListener('change', build));
+  $('SM').addEventListener('change', () => { state.SM = $('SM').value; saveHash(); applyStress(); });
+  $('UL').checked = !!state.UL; $('UL').addEventListener('change', () => { state.UL = $('UL').checked ? 1 : 0; saveHash(); silhouette(); });
   $('leg').addEventListener('change', e => { const g = e.target.dataset.g; if (!g) return; vis[g] = e.target.checked; GR[g].visible = vis[g]; draw(); });
   document.querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', () => VIEWS[b.dataset.v]()));
   $('copy').addEventListener('click', () => {

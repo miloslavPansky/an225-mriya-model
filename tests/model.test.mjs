@@ -4,10 +4,10 @@
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const src = readFileSync(new URL('../js/model.js', import.meta.url), 'utf8');
 const ctx = { window: {} };
-vm.runInNewContext(src, ctx, { filename: 'js/model.js' });
-const M = ctx.window.AN225;
+for (const f of ['an225-ref.js', 'model.js', 'stress.js'])
+  vm.runInNewContext(readFileSync(new URL('../js/' + f, import.meta.url), 'utf8'), ctx, { filename: 'js/' + f });
+const M = ctx.window.AN225, SA = ctx.window.AN225_STRESS;
 
 let failed = 0;
 const fail = (msg) => { failed++; console.error('  ✗ ' + msg); };
@@ -61,14 +61,25 @@ for (const c of CASES) {
     joint(p) { S.joints++; if (!finite(p)) fail('spoj s neplatnou polohou'); },
     count(g, name, w, h, n) { S.counted += n; if (![w, h, n].every(Number.isFinite)) fail(`count ${name}: neplatné hodnoty`); else checkSize(name, w, h); },
   };
+  let geo = null;
   try {
-    M.buildModel({ L: st.L, P: st.P, T: st.T, CW: st.CW, nS, nW, bed }, out);
+    geo = M.buildModel({ L: st.L, P: st.P, T: st.T, CW: st.CW, nS, nW, bed }, out);
   } catch (e) {
     fail('výjimka: ' + (e && e.stack || e));
+  }
+  // výpočet namáhání: všechny stavy musí dát konečná čísla
+  if (geo && SA) {
+    if (!geo.struct) fail('buildModel nevrací struct pro výpočet namáhání');
+    else for (const l of SA.LC.concat([{ id: 'env' }])) {
+      const r = l.id === 'env' ? SA.envelope(geo.struct) : SA.analyze(geo.struct, l.id);
+      if (!r.crit.length || !r.crit.every(c => Number.isFinite(c.u) && Number.isFinite(c.s))) fail(`namáhání ${l.id}: neplatný výsledek`);
+      if (c.checkBed && l.id !== 'env') S.stress = (S.stress || []).concat(r.crit.slice(0, 2).map(q => `${l.id}: ${q.label} ${Math.round(q.u * 100)} %`));
+    }
   }
   if (S.parts === 0) fail('nevznikl žádný díl');
   if (c.checkBed && S.over.length) fail(`díly přes pracovní plochu − 20 mm: ${S.over.join(', ')}`);
   console.log(`${failed === before ? '✓' : '✗'} ${c.name}: ${S.counted} dílů, ${S.joints} spojů${S.over.length && !c.checkBed ? ` (přes limit: ${S.over.length})` : ''}`);
+  if (S.stress) console.log('    namáhání (výchozí nastavení):\n      ' + S.stress.join('\n      '));
 }
 
 if (failed) { console.error(`\n${failed} chyb`); process.exit(1); }

@@ -32,6 +32,11 @@ button:hover{background:var(--neutral)}
 h2{font-size:15px;font-weight:500;margin:16px 0 6px}
 svg{display:block;width:100%;max-width:760px;color:var(--text2)}
 .note{font-size:12px;color:var(--muted)}
+#smTab{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}#smTab th{text-align:left;color:var(--text2);font-weight:500}#smTab td,#smTab th{padding:3px 4px;border-bottom:.5px solid var(--border);vertical-align:top}#smTab td:nth-child(2),#smTab td:nth-child(3){white-space:nowrap;text-align:right}
+.pill{display:inline-block;min-width:44px;text-align:center;border-radius:6px;padding:1px 6px;color:#fff;font-weight:500}
+.scale{height:10px;border-radius:5px;background:linear-gradient(90deg,#1D9E75 0%,#EFBF3C 33%,#E87828 53%,#D62828 67%,#6E145A 100%)}.scale+div{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.ul{opacity:.38}@media (prefers-color-scheme:dark){.ul{filter:invert(1)}}
+label.inl{font-size:13px;color:var(--text2);display:inline-flex;gap:6px;align-items:center;margin-left:10px;font-weight:400}
 </style>
 </head>
 <body>
@@ -57,6 +62,13 @@ svg{display:block;width:100%;max-width:760px;color:var(--text2)}
       </div>
       <h2>Skupiny dílů</h2>
       <div id="leg" class="grid2"></div>
+      <h2>Namáhání (orientační)</h2>
+      <label class="ctl">Zatěžovací stav<select id="SM"></select></label>
+      <div id="smBox" hidden>
+        <div class="scale"></div><div><span>0 %</span><span>50 %</span><span>100 %</span><span>≥150 %</span></div>
+        <table id="smTab"></table>
+        <p class="note">Využití = napětí / dovolené napětí. Bříza 3 mm: ohyb 40 MPa, lepený spoj na odtržení 2 MPa. Prutový výpočet pro porovnání variant, ne přesná predikce. Šedé díly se v daném stavu neposuzují. Nad 100 % hrozí zlomení.</p>
+      </div>
       <div class="row"><button id="copy">Kopírovat odkaz s nastavením</button></div>
       <p class="note" id="copied"></p>
     </div>
@@ -67,13 +79,15 @@ svg{display:block;width:100%;max-width:760px;color:var(--text2)}
       <button data-v="photo">Jako foto</button><button data-v="iso">3D</button><button data-v="side">Bok</button><button data-v="top">Shora</button>
       <button data-v="front">Zepředu</button><button data-v="tail">Ocas</button><button data-v="root">Kořen křídla</button><button data-v="spar">Jen nosník + páteř</button>
     </div>
-    <h2>Bokorys</h2><svg id="sv1" viewBox="0 0 360 92"></svg>
+    <h2>Bokorys <label class="inl"><input type="checkbox" id="UL"> výkres jako podklad (<a href="https://drawingdatabase.com/wp-content/uploads/2014/03/An-225-3.jpg">zdroj</a>)</label></h2><svg id="sv1" viewBox="0 0 360 92"></svg>
     <h2>Půdorys</h2><svg id="sv2" viewBox="0 0 360 290"></svg>
   </section>
 </main>
 <footer class="note" style="max-width:1400px;margin:0 auto;padding:0 20px 24px">Verze: <span id="build">lokální</span></footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/an225-ref.js"></script>
 <script src="js/model.js"></script>
+<script src="js/stress.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
