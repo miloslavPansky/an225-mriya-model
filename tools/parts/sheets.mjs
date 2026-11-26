@@ -97,11 +97,11 @@ function clipX(P, xc, less) {
   b += callout(f, [aTip * k, -(sxAt(aTip) - 1.2) * k], 420, 80, 'koncové žebro – celé, uzavírá křídlo');
   b += callout(f, [(aTip - 0.6) * k, -sxAt(aTip - 0.6) * k], 420, 120, 'pásnice končí v líci koncového žebra');
   // koncové žebro – díl
-  const R = mm(tip), f2 = frame([430, 190, 230, 110], [R], 4);
+  const R = mm(tip), f2 = frame([430, 190, 200, 110], [R], 4);
   b += txt(430, 170, 'Koncové žebro (1 ks/strana)', 'start', 'th') + poly(f2, R, C.rib, 0.35, 0.8);
   const xs = R.map(p => p[0]), zs = R.map(p => p[1]);
   b += hdim(f2, Math.min(...xs), Math.max(...xs), Math.min(...zs), null, 18) + vdim(f2, Math.min(...zs), Math.max(...zs), Math.max(...xs), null, 12);
-  b += txt(430, 345, 'Lože pásnic shora/zdola a lišty: hloubka 3 mm', 'start');
+  b += txt(430, 345, 'Lože pro pásnici shora i zdola, hloubka 3 mm', 'start');
   console.log('tip', sheet('1-konec-kridla', 'Konec křídla uzavřený koncovým žebrem', 380, b));
 }
 
@@ -221,14 +221,14 @@ function clipX(P, xc, less) {
 
 // =========== 5 — gondola, pylon, prstence
 {
-  const go = parts.find(q => q.name === 'Gondola + pylon' && q.O[1] > 20);
+  const go = parts.find(q => q.name === 'Gondola + pylon' && q.O[1] > 14 && q.O[1] < 22);
   const e = G.EN.reduce((b, n) => Math.abs(n.e - go.O[1]) < Math.abs(b.e - go.O[1]) ? n : b).e;
   const rings = parts.filter(q => q.name === 'Prstenec gondoly' && Math.abs(q.pts[0][0] - e) < 2 && q.pts[0][0] > 0);
   const Gp = mm(go);
   // křídlo v řezu rovinou gondoly (obrys pro orientaci)
   const af = M.airfoil(M.WING.le(e), M.WING.c(e), M.WING.z(e), G.th(e), 0.02, 1.5 / k).map(p => [p[0] * k, p[1] * k]);
   const f = frame([20, 40, 640, 200], [Gp, af], 6);
-  let b = txt(20, 24, 'Gondola + pylon (vnější motor, 2 vrstvy) – bokorys dílu', 'start', 'th');
+  let b = txt(20, 24, 'Gondola + pylon (prostřední motor, 2 vrstvy) – bokorys dílu', 'start', 'th');
   b += pline(f, af.concat([af[0]]), C.ghost, 0.8);
   b += poly(f, Gp, C.en, 0.4, 0.8);
   const gx = Gp.map(p => p[0]), gz = Gp.map(p => p[1]);
