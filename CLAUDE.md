@@ -5,7 +5,7 @@ Komunikace s vlastníkem: česky, stručně, technicky přesně, strukturovaně.
 ## Co to je
 Parametrický model An-225 v konstrukci „rybí kostra“ pro výrobu z 3mm **březové** překližky na CNC (stůl 1000 × 650 mm).
 Účel: hračka pro 8letého syna (nelétá) – robustní v místech namáhaných ohybem; vzhled rybí kosti zachovat.
-Úplný stav, rozhodnutí a otevřené body: `README.md` – při každé změně konstrukce ho aktualizuj (tabulka stavu, namáhání, historie rozhodnutí, otevřené body).
+Úplný stav, rozhodnutí a otevřené body: `README.md`; výkresy dílů `docs/parts/` (`node tools/parts/sheets.mjs`) – po změně dílů přegenerovat – při každé změně konstrukce ho aktualizuj (tabulka stavu, namáhání, historie rozhodnutí, otevřené body).
 
 ## Architektura
 - `js/an225-ref.js` – **referenční geometrie z výkresu 3 pohledů** (`AN225_REF`), každá hodnota se značkou původu ([O] oficiální, [B]/[P]/[N] bokorys/půdorys/nárys, [Ř] řezy, [PR] profily, [D] dopočteno, [E] odhad). Nové poznatky o tvaru letadla zapisuj sem (s původem), ne do model.js. Nástroje odečtu a kalibrace: `tools/digitize/`. Obrázek výkresu se do repa nedává (autorská práva).
@@ -21,10 +21,10 @@ Parametrický model An-225 v konstrukci „rybí kostra“ pro výrobu z 3mm **b
 
 ## Konstrukční pravidla (dodržovat)
 - Pouze hřebenové spoje (zářez od hrany), žádné vnitřní výřezy, pokud to není nezbytné.
-- Páteř 2 vrstvy, v místě nosníku příložky; trup s bočními podélníky.
-- Křídlo: průběžný I-nosník bez zářezů (stojiny + V pásnice přes celé rozpětí, v ose spojka), všechna žebra jako půlžebra lepená na stojinu; pomocná spodní lišta v 65 % hloubky. Min. tloušťka profilu 12 mm, odtoková hrana ≥ 3 mm.
-- Pravidelné žebrování křídel; pylon vždy mezi dvě žebra, jako vidlice kolem nosníku.
-- Výškovka 2 vrstvy, kýlovky 2 (+ 2 výztuhy), podvozek 2 (pásy zasazené do žeber), prstence gondol 2.
+- Páteř 2 vrstvy (bez příložek), s centroplánem křídla se kříží hřebenem; trup s bočními podélníky.
+- Křídlo: průběžný I-nosník, stojiny bez zářezů; centroplán (kořenová žebra ±aK) s kýlem pod dolní pásnicí uvnitř trupu; pásnice 1 vrstva, 1 díl, zužující se ke konci, **zapuštěné do loží žeber se zářezy pro žebra** (líc = obrys profilu); pomocná lišta v 65 % se zářezy; konec uzavřen koncovým žebrem. Žádné další vrstvy pásnic ani příložky. Min. tloušťka profilu 12 mm, odtoková hrana ≥ 3 mm.
+- Pravidelné žebrování křídel; pylon vždy mezi dvě žebra, nasazený zespodu výřezem na nosník (lepit), náběžná hrana pylonu plynule do křídla.
+- Výškovka 2 vrstvy, kýlovky 2 (+ 2 výztuhy), podvozek 2 (pásy zasazené do žeber), prstence gondol 1 vrstva v rozestupu žeber, spoj s gondolou 50/50.
 - Žádný díl nesmí přesáhnout pracovní plochu frézy − 20 mm; nejužší místo dílu ≥ 5 mm (obojí hlídá test).
 
 ## Další krok (backlog)

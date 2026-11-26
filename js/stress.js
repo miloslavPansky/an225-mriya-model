@@ -82,8 +82,9 @@
     const push = (label, r) => crit.push({ label, u: r.u, s: r.s, what: r.what || '' });
     if (id === 'wing') {
       let worst = null;
-      for (let a = 0.5; a < w.semi - 0.5; a += 0.25) { const r = wingAt(a); if (!worst || r.u > worst.r.u) worst = { a, r }; }
-      push('Kořen křídla (osa)', wingAt(0.5));
+      for (let a = 0.3; a < w.semi - 0.5; a += 0.25) { const r = wingAt(a); if (!worst || r.u > worst.r.u) worst = { a, r }; }
+      push('Centroplán v ose trupu', wingAt(0.3));
+      if (w.aK) push('U boku trupu (kořenové žebro)', wingAt(w.aK + 0.05));
       push(`Nejslabší průřez nosníku (${(worst.a * k / 10).toFixed(0)} cm od osy)`, worst.r);
       push('Nosník v 70 % polorozpětí', wingAt(0.7 * w.semi));
     } else if (id === 'tailV') {

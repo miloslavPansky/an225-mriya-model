@@ -7,7 +7,7 @@
     ['sp', 'Páteř', 0x7A5A32], ['rb', 'Trup – žebra', 0xD9B781], ['sw', 'Nosník – stojiny', 0x8A6438], ['wg', 'Křídla – žebra', 0xC29A60],
     ['en', 'Gondoly + pylony', 0x8E8A84], ['tl', 'Ocasní plochy', 0xA8784A], ['gr', 'Podvozek', 0x55524D], ['rf', 'Pásnice + výztuhy', 0x1D9E75], ['jn', 'Spoje', 0xE24B4A]];
   const hex = c => '#' + c.toString(16).padStart(6, '0');
-  const DEF = { L: 80, P: 15, CW: 14, T: 3, S: '2,2', B: '1000,650', SM: 'groups', UL: 1 };
+  const DEF = { L: 80, P: 15, CW: 20, T: 3, S: '2,2', B: '1000,650', SM: 'groups', UL: 1 };
   const STRK = ['S', 'B', 'SM'];
   const state = Object.assign({}, DEF);
   const vis = {}; GDEF.forEach(g => vis[g[0]] = true);
@@ -118,8 +118,10 @@
     tail: () => { setVis(); view(-1.0, 0.35, 0.55, [78, 0, 11]); },
     root: () => { setVis(['sp', 'sw', 'wg', 'rf', 'jn', 'en']); view(-0.35, 0.55, 0.5, [31, 6, 8.5]); },
     spar: () => { setVis(['sp', 'sw', 'rf']); view(-0.5, 0.5, 1.2, [38, 0, 8]); },
+    tip: () => { setVis(); view(-0.55, 0.6, 0.16, [49, 41.5, 7.0]); },
+    eng: () => { setVis(); view(-1.0, -0.25, 0.3, [38.5, 25.5, 6.0]); },
   };
-  window.AN225_VIEW = n => VIEWS[n]();
+  window.AN225_VIEW = (n, ...a) => n === 'custom' ? (setVis(a[4]), view(...a)) : VIEWS[n](); // custom: (yaw, pitch, zoom, [x,y,z], skupiny)
 
   // ---------- mapa namáhání ----------
   const SA = window.AN225_STRESS, GRAY = [0.78, 0.77, 0.74], VMAT = new THREE.MeshLambertMaterial({ vertexColors: true });
