@@ -19,7 +19,7 @@ if (!M || typeof M.buildModel !== 'function') {
 }
 
 // výchozí hodnoty musí odpovídat DEF v js/app.js
-const DEF = { L: 80, P: 15, CW: 16, T: 3, S: '2,2', B: '1000,650' };
+const DEF = { L: 80, P: 15, CW: 20, T: 3, S: '2,2', B: '1000,650' };
 const CASES = [
   { name: 'výchozí (80 cm, 1000×650)', p: {}, checkBed: true },
   { name: 'min. délka 50 cm', p: { L: 50 } },

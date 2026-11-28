@@ -7,7 +7,7 @@
     ['sp', 'Páteř', 0x7A5A32], ['rb', 'Trup – žebra', 0xD9B781], ['sw', 'Nosník – stojiny', 0x8A6438], ['wg', 'Křídla – žebra', 0xC29A60],
     ['en', 'Gondoly + pylony', 0x8E8A84], ['tl', 'Ocasní plochy', 0xA8784A], ['gr', 'Podvozek', 0x55524D], ['rf', 'Pásnice + výztuhy', 0x1D9E75]];
   const hex = c => '#' + c.toString(16).padStart(6, '0');
-  const DEF = { L: 80, P: 15, CW: 16, T: 3, S: '2,2', B: '1000,650', SM: 'groups', UL: 1 };
+  const DEF = { L: 80, P: 15, CW: 20, T: 3, S: '2,2', B: '1000,650', SM: 'groups', UL: 1 };
   const STRK = ['S', 'B', 'SM'];
   const state = Object.assign({}, DEF);
   const vis = {}; GDEF.forEach(g => vis[g[0]] = true);

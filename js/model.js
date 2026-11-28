@@ -63,7 +63,10 @@
     leadIn: 0.5,        // zkosení vstupu zářezu
     teMin: 3,           // odtoková hrana profilu (G6)
     wingMinThick: 12,   // minimální tloušťka profilu křídla (stojina nosníku ≥ 5 mm)
-    flangeTipW: 10,     // pásnice nosníku: šířka u koncového žebra (u kořene = parametr CW); bez zářezů, žebra mají lože
+    flangeTipW: 12,     // pásnice nosníku: šířka u koncového žebra (u kořene = parametr CW)
+    flangeNotch: 3,     // obdélníkové výřezy pásnice pro žebra – hloubka od každého okraje
+    flangeNotchW: 5,    // – šířka (žebro kříží pásnici šikmo o úhel šípu 26°: 3/cos + 3·tg + vůle)
+    tieW: 10,           // spodní spojka pod hlubokými stojinami – šířka
     stripW: 10,         // pomocná lišta křídla – šířka (rovný pás bez zářezů, zapuštěný do loží žeber)
     gusset: 25,         // výztuhy kýlovky – odvěsna (K7), 2 ks na kýlovku (nad a pod výškovkou, z vnitřní strany)
   };
@@ -139,19 +142,19 @@
       for (let j = 0; j < cuts.length - 1; j++) part('sp', prof(cuts[j], cuts[j + 1], top, bot, 0.3), [0, d * tm, 0], [1, 0, 0], [0, 0, 1], { name: 'Páteř' });
     });
 
-    // osa nosníku křídla: centroplán přes trup (přímý, příčný) mezi kořenovými žebry ±aK, dál přímá šípová
+    // osa nosníku křídla: přímá šípová od osy trupu ke konci (stojina každého křídla = 1 díl, v ose tvoří Λ)
     //   v ose 35 % hloubky [D], u konce (aS) 42 % – dál od zaoblené náběžné hrany, aby se pásnice vešla do koncového žebra
     const aS = WING.semi - 0.6, sp0 = WING.le(0) + RW.spar * WING.c(0), sp1 = WING.le(aS) + 0.42 * WING.c(aS);
-    const aK = Math.max(fW(sp0) + 0.35, 3.9);
-    const sxC = sp0 + (sp1 - sp0) * aK / aS, slope = (sp1 - sxC) / (aS - aK), cosP = 1 / Math.hypot(1, slope);
-    const sx = a => { a = Math.abs(a); return a <= aK ? sxC : sxC + slope * (a - aK); };
+    const aK = Math.max(fW(sp0) + 0.35, 3.9);                     // kořenové žebro (bok trupu); uvnitř je křídlo bez vzepětí
+    const slope = (sp1 - sp0) / aS, cosP = 1 / Math.hypot(1, slope);
+    const sx = a => sp0 + slope * Math.abs(a);
 
     // žebra trupu – tvar z řezů výkresu (G2), výška z bokorysu, šířka z půdorysu
     const NZ = 40;
     for (const x of ribX) {
       const b = bot(x), t = top(x), H = t - b, S = secShape(x), w = fW(x);
       if (H < 0.4 || w < 0.3) continue;
-      if (Math.abs(x - sxC) < cw / 2 + tm + 0.05) continue;   // místo zabírá centroplán (stojina + kýl)
+      if (x > sp0 - cw / 2 - tm - 0.05 && x < sx(aK) + cw / 2 + tm + 0.05) continue;   // místo zabírá kořen nosníku (hluboké stojiny)
       const R = [];
       for (let i = 0; i <= NZ; i++) { const z = i / NZ; R.push([Math.max(0.02, sAt(S, z) * w), b + z * H]); }
       const pts = R.concat(R.slice().reverse().map(q => [-q[0], q[1]]));
@@ -167,14 +170,15 @@
     }
 
     // ---------- křídlo
-    // Nosník: centroplán přes trup (přímý, bez vzepětí) mezi kořenovými žebry ±aK, dál přímý šípový se vzepětím.
-    // Horní a dolní pásnice v 1 vrstvě, zapuštěné do žeber (lícují s obrysem profilu) a se zářezy pro žebra.
-    // Kořen: uvnitř trupu pod dolní pásnicí kýl (lepený na pásnici) – nosník je tam ~2,5× vyšší než profil.
+    // Nosník: stojina každého křídla je 1 díl (2 vrstvy) od osy trupu ke koncovému žebru, uvnitř trupu hluboká;
+    // v ose se stojiny potkají ve tvaru Λ v zářezu páteře. Horní pásnice průběžná (Λ, ohyb na kořenových žebrech),
+    // dolní pásnice od kořenového žebra ke konci, pod hlubokými stojinami spodní spojka (Λ). Pásnice 1 vrstva,
+    // zapuštěné do loží žeber, obdélníkové výřezy pro žebra z obou okrajů.
     const W = WING, clamp = v => Math.min(1, Math.max(0, v));
     const th = a => Math.max(W.tr(a) * W.c(a), RULES.wingMinThick / k);
     const hMin = RULES.teMin / 2 / k;
     const camAt = (a, xx) => RW.camber * W.c(a) * 4 * xx * (1 - xx);
-    const ae = a => Math.max(Math.abs(a), aK);                  // centroplán má profil kořenového žebra
+    const ae = a => Math.max(Math.abs(a), aK);                  // uvnitř trupu (mezi kořenovými žebry) má křídlo profil kořenového žebra, bez vzepětí
     const surf = (a, x, s) => { a = ae(a); const c = W.c(a), xx = clamp((x - W.le(a)) / c); let h = 0.5 * th(a) * tD(xx); if (xx > 0.5) h = Math.max(h, hMin); return W.z(a) + camAt(a, xx) + s * h; };
     const foil = a => airfoil(W.le(ae(a)), W.c(ae(a)), W.z(ae(a)), th(ae(a)), RW.camber, hMin);
     const sTop = a => surf(a, sx(a), 1), sBot = a => surf(a, sx(a), -1);
@@ -182,14 +186,15 @@
 
     // žebra: kořenové (aK, celé) … koncové (aTip, celé), mezi nimi pravidelně půlžebra
     let aTip = W.semi - tm / 2;                                  // koncové žebro: pásnice nesmí přečnívat náběžnou hranu (≥ 2 mm)
-    const cwT = Math.min(cw, Math.max(RULES.flangeTipW, p.nW * T + 2 * RULES.tool) / k); // pásnice u konce: lože v půlžebru ≥ Ø frézy
+    const ndF = RULES.flangeNotch / k, nwF = RULES.flangeNotchW / k;     // výřezy pásnice pro žebra: hloubka × šířka
+    const cwT = Math.min(cw, Math.max(RULES.flangeTipW, p.nW * T + 2 * RULES.flangeNotch) / k); // u konce: jádro ≥ stojina
     while (aTip > yR && sx(aTip) - W.le(aTip) < cwT / 2 / cosP + 2 / k) aTip -= 0.05;
     const nB = Math.max(2, Math.round((aTip - aK) / pm)), pw = (aTip - aK) / nB;
     const ribA = Array.from({ length: nB + 1 }, (_, i) => aK + i * pw);
     const webH = p.nW * tm / 2 + 0.02, dxw = webH / cosP;
     // pásnice se ke konci zužuje (ohybový moment klesá k nule) – u konce zůstane víc z rybí kosti
     const cwA = a => cw + (cwT - cw) * clamp((Math.abs(a) - aK) / (aTip - aK)); // lichoběžník: CW u kořene → cwT u konce
-    const fcxA = a => cwA(a) / 2 / cosP;                         // lože pásnice v rovině žebra (podél x)
+    const fcxA = a => (cwA(a) / 2 - ndF) / cosP;                 // lože v žebru = plné jádro pásnice; ve výřezech je žebro v plné výšce
     const wL = RULES.stripW / k;                                 // pomocná lišta: rovný pás, začíná v 65 % hloubky kořenového žebra
     const xL = a => W.le(a) + 0.65 * W.c(a);
     // lišta je přímá: od 65 % hloubky kořenového žebra k 65 % hloubky posledního žebra, kde ještě platí:
@@ -203,45 +208,68 @@
     if (!xLs) { iL = 0; xLs = xL; }
     const aLe = ribA[iL];
 
-    // pás (pásnice, lišta) mezi body A–B střednice: jednoduchý lichoběžník, šířka 2·hw0 → 2·hw1, bez zářezů
+    // pás (pásnice, lišta) mezi body A–B střednice: lichoběžník šířky 2·hw0 → 2·hw1; Ys = roviny žeber y,
+    // pro které má pás obdélníkové výřezy (šířka nwF, hloubka ndF) z obou okrajů
     // (vyrábí se jako jeden plochý díl, do loží žeber se mírně prohne – vizualizace po polích mezi žebry)
-    const stripSeg = (name, A, B, hw0, hw1) => {
-      const U = nrm(sub(B, A)), V = nrm(crs([0, 0, 1], U)), len = Math.hypot(...sub(B, A));
-      part('rf', [[0, -hw0], [len, -hw1], [len, hw1], [0, hw0]], A, U, V, { noCount: true, name });
+    const stripSeg = (name, A, B, hw0, hw1, Ys = []) => {
+      const U = nrm(sub(B, A)), V = nrm(crs([0, 0, 1], U)), len = Math.hypot(...sub(B, A)), hw = u => hw0 + (hw1 - hw0) * u / len;
+      const edge = s => {
+        const P = [[0, s * hw0]];
+        for (const Y of Ys) {
+          const um = (Y - A[1]) / U[1], uc = (Y - A[1] - V[1] * s * (hw(um) - ndF / 2)) / U[1];
+          const u0 = Math.max(0, uc - nwF / 2), u1 = Math.min(len, uc + nwF / 2);
+          if (u1 > u0) P.push([u0, s * hw(u0)], [u0, s * (hw(u0) - ndF)], [u1, s * (hw(u1) - ndF)], [u1, s * hw(u1)]);
+        }
+        P.push([len, s * hw1]); return P.sort((p, q) => p[0] - q[0]);
+      };
+      part('rf', edge(-1).concat(edge(1).reverse()), A, U, V, { noCount: true, name });
     };
-    const bnd = [aK].concat(ribA.slice(0, -1).map((r, i) => (r + ribA[i + 1]) / 2), [aTip + tm / 2]);
+    const ribsIn = (a0, a1, sg) => ribA.filter((r, i) => i < nB && r + tm / 2 > a0 && r - tm / 2 < a1).map(r => sg * r);
+    const bnd = [aK].concat(ribA.slice(0, -1).map((r, i) => (r + ribA[i + 1]) / 2), [aTip - tm / 2]);
 
-    // stojiny: centroplán (příčná rovina) + šípové stojiny vnějších křídel, bez zářezů; začínají/končí na plochách žeber
-    const sides = {};
-    for (const sg of [1, -1]) {
-      const Pk = [sxC, sg * aK, szc(aK)], Pt = [sx(aTip), sg * aTip, szc(aTip)], U = nrm(sub(Pt, Pk));
-      const V = nrm([-U[2] * U[0], -U[2] * U[1], 1 - U[2] * U[2]]);
-      let N = crs(U, V); if (N[0] > 0) N = N.map(v => -v);
-      const S = sides[sg] = { Pk, U, V, N, a2u: Math.hypot(...sub(Pt, Pk)) / (aTip - aK) };
-      const off = u => (szc(aK + u / S.a2u) - add(Pk, U, u)[2]) / V[2], hv = u => (hS(aK + u / S.a2u) - tm) / V[2];
-      const u0 = tm / 2 * S.a2u, u1 = (aTip - aK - tm / 2) * S.a2u;
-      const pts = prof(u0, u1, u => off(u) + hv(u), u => off(u) - hv(u), (u1 - u0) / 30);
-      sym(p.nW).forEach(d => part('sw', pts, add(Pk, N, d * tm), U, V, { name: 'Stojina nosníku' }));
-    }
-    const a2u = sides[1].a2u, yC = aK - tm / 2, zTi = sTop(aK) - tm, zBi = sBot(aK) + tm, zBo = sBot(aK);
-    lam('sw', [[-yC, zBi], [yC, zBi], [yC, zTi], [-yC, zTi]], [sxC, 0, 0], [0, 1, 0], [0, 0, 1], sym(p.nW), { name: 'Stojina centroplánu' });
-    // kýl centroplánu: pod dolní pásnicí, uvnitř průřezu trupu (odstup 8 mm od obrysu), nad bočními podélníky
-    const mIn = 8 / k, zDeep = Math.max(zs + 0.9, szc(aK) - 4 * hS(aK));
-    const yKz = z => { let m = yC; for (let q = z; q <= zBo + 1e-6; q += 0.05) m = Math.min(m, hwAt(sxC, q) - mIn); return Math.max(0, m); };
+    // stojiny: každé křídlo 1 díl od osy (y = 0) po vnitřní plochu koncového žebra, svislá rovina podél osy nosníku,
+    // vzepětí = lom obrysu v rovině desky na kořenovém žebru. Uvnitř trupu hluboká část (odstup 8 mm od obrysu trupu,
+    // nad bočními podélníky); mezi ní a kořenovým žebrem sahá stojina k dolnímu obrysu profilu (dolní pásnice tam není).
+    const mIn = 8 / k, zDeep = Math.max(zs + 0.9, szc(aK) - 4 * hS(aK)), zBo = sBot(aK), xD = sx(aK / 2);
+    const yKz = z => { let m = aK; for (let q = z; q <= zBo + 1e-6; q += 0.05) m = Math.min(m, hwAt(xD, q) - mIn); return Math.max(0, m); };
     const KL = []; for (let i = 0; i <= 16; i++) { const z = zDeep + (zBo - zDeep) * i / 16; KL.push([yKz(z), z]); }
-    lam('sw', KL.concat(KL.slice().reverse().map(q => [-q[0], q[1]])), [sxC, 0, 0], [0, 1, 0], [0, 0, 1], sym(p.nW), { name: 'Kýl centroplánu' });
-    const keelH = y => { y = Math.abs(y); const q = KL.find(q => q[0] >= y); return q ? (zBo - q[1]) : 0; };
-    jn([sxC, 0, zBi], 1.6, 'spar');
+    const yD = KL[0][0], yF = aK - tm / 2;                               // konec ploché spodní hrany / začátek dolní pásnice
+    const webBot = a => { a = Math.abs(a); if (a >= yF) return sBot(a) + tm; const q = KL.find(q => q[0] >= a); return q ? q[1] : sBot(a); };
+    const deepH = a => Math.max(0, sBot(Math.abs(a)) - webBot(a));      // hloubka stojiny pod obrysem profilu
+    const webTop = a => sTop(a) - tm;
+    const uEnd = (aTip - tm / 2) / cosP;
+    for (const sg of [1, -1]) {
+      const U = nrm([slope, sg, 0]), V = [0, 0, 1], O = [sp0, 0, 0];
+      const A = []; for (let i = 0; i <= 40; i++) A.push(aTip * i / 40);
+      KL.forEach(q => A.push(q[0] - 1e-4, q[0] + 1e-4)); A.push(yF - 1e-4, yF + 1e-4, aK);
+      const As = [...new Set(A.filter(a => a >= 0 && a < aTip - tm / 2))].sort((x, y) => x - y);
+      const tp = As.map(a => [a / cosP, webTop(a)]), bt = As.map(a => [a / cosP, webBot(a)]);
+      tp.push([uEnd, webTop(aTip - tm / 2)]); bt.push([uEnd, webBot(aTip - tm / 2)]);
+      const pts = tp.concat(bt.reverse());
+      sym(p.nW).forEach(d => part('sw', pts, add(O, crs(U, V), d * tm), U, V, { name: 'Stojina nosníku' }));
+    }
+    const a2u = 1 / cosP;
+    jn([sp0, 0, zBo], 1.6, 'spar');
 
-    // pásnice: jeden díl nahoře a jeden dole (2 ohyby 5,6° na kořenových žebrech); vizualizace po polích mezi žebry
+    // horní pásnice: 1 díl Λ přes celé rozpětí (ohyb 5,6° na kořenových žebrech); dolní: 2 díly od kořenového žebra
     for (const s of [1, -1]) {
       const zf = a => s > 0 ? sTop(a) - tm / 2 : sBot(a) + tm / 2;
-      stripSeg('Pásnice nosníku', [sxC, -aK, zf(aK)], [sxC, aK, zf(aK)], cw / 2, cw / 2);
-      for (const sg of [1, -1]) for (let j = 0; j < bnd.length - 1; j++)
-        stripSeg('Pásnice nosníku', [sx(bnd[j]), sg * bnd[j], zf(bnd[j])], [sx(bnd[j + 1]), sg * bnd[j + 1], zf(bnd[j + 1])], cwA(bnd[j]) / 2, cwA(bnd[j + 1]) / 2);
+      for (const sg of [1, -1]) {
+        if (s > 0) stripSeg('Pásnice nosníku', [sx(0), 0, zf(0)], [sx(aK), sg * aK, zf(aK)], cw / 2, cw / 2);
+        const b0 = s > 0 ? bnd : [yF].concat(bnd.slice(1));
+        for (let j = 0; j < b0.length - 1; j++)
+          stripSeg('Pásnice nosníku', [sx(b0[j]), sg * b0[j], zf(b0[j])], [sx(b0[j + 1]), sg * b0[j + 1], zf(b0[j + 1])], cwA(b0[j]) / 2, cwA(b0[j + 1]) / 2, ribsIn(b0[j], b0[j + 1], sg));
+      }
     }
-    const vW = 2 * (aTip + tm / 2) * k + p.CW, vH = (sx(aTip) - sxC) * k + p.CW * 1.2;
-    out.count('rf', 'Pásnice nosníku (horní, dolní)', vW, vH, 2);
+    out.count('rf', 'Horní pásnice nosníku (Λ)', 2 * aTip * k + p.CW, (sx(aTip) - sp0) * k + p.CW * 1.2, 1);
+    out.count('rf', 'Dolní pásnice nosníku', (aTip - aK) / cosP * k + p.CW, p.CW, 2);
+    // spodní spojka: Λ pás pod plochou spodní hranou hlubokých stojin přes osu (drží stojiny k sobě při zvedání křídel)
+    const wTie = RULES.tieW / k;
+    if (yD > 0.3) {
+      for (const sg of [1, -1]) stripSeg('Spodní spojka nosníku', [sp0, 0, zDeep - tm / 2], [sx(yD), sg * yD, zDeep - tm / 2], wTie / 2, wTie / 2);
+      out.count('rf', 'Spodní spojka nosníku (Λ)', 2 * yD * k + RULES.tieW, slope * yD * k + RULES.tieW * 1.2, 1);
+    }
+
     // pomocná lišta: v 65 % hloubky, zapuštěná do spodních hran žeber, se zářezy pro žebra
     const bL = [aK - tm / 2].concat(bnd.slice(1, iL + 1), [aLe + tm / 2]);
     for (const sg of [1, -1]) for (let j = 0; j < bL.length - 1; j++) {
@@ -264,12 +292,12 @@
     for (const sg of [1, -1]) ribA.forEach((a, i) => {
       const xs = sx(a), fcx = fcxA(a), cl = wL / 2 / cosL, L = i <= iL ? [[xLs(a) - cl, xLs(a) + cl]] : [];
       const O = [0, sg * a, 0], le = W.le(a), te = W.te(a);
-      if (i === 0 || i === nB) {
-        const F = [[xs - fcx, xs + fcx]];
-        part('wg', ribPoly(a, le, te, F, F.concat(L)), O, [1, 0, 0], [0, 0, 1], { name: i ? 'Koncové žebro' : 'Kořenové žebro' });
-      } else {
-        part('wg', ribPoly(a, le, xs - dxw, [[xs - fcx, xs + 1]], [[xs - fcx, xs + 1]]), O, [1, 0, 0], [0, 0, 1], { name: 'Půlžebro křídla přední' });
-        part('wg', ribPoly(a, xs + dxw, te, [[xs - 1, xs + fcx]], [[xs - 1, xs + fcx]].concat(L)), O, [1, 0, 0], [0, 0, 1], { name: 'Půlžebro křídla zadní' });
+      if (i === nB) {   // koncové žebro: celé, plný profil – stojina i pásnice končí na jeho vnitřní ploše
+        part('wg', ribPoly(a, le, te, [], L), O, [1, 0, 0], [0, 0, 1], { name: 'Koncové žebro' });
+      } else {          // kořenové i běžná žebra: přední + zadní půlžebro na stojině, lože pro jádro pásnic
+        const nm = i ? 'Půlžebro křídla' : 'Kořenové půlžebro';
+        part('wg', ribPoly(a, le, xs - dxw, [[xs - fcx, xs + 1]], [[xs - fcx, xs + 1]]), O, [1, 0, 0], [0, 0, 1], { name: nm + ' přední' });
+        part('wg', ribPoly(a, xs + dxw, te, [[xs - 1, xs + fcx]], [[xs - 1, xs + fcx]].concat(L)), O, [1, 0, 0], [0, 0, 1], { name: nm + ' zadní' });
       }
     });
 
@@ -370,16 +398,22 @@
       wing: {
         semi: aTip, aK, ribs: ribA.length,
         lever: a => Math.max(0, aTip - Math.abs(a)) * a2u * k,
-        // průřez: pásnice (v místě zářezu jen jádro), stojiny, v centroplánu navíc kýl pod dolní pásnicí
+        // průřez: pásnice (v místě výřezů jen jádro) + stojiny; u kořene hluboká stojina + horní pásnice + spodní spojka
         sec: a => {
           a = Math.abs(a);
-          const inC = a < aK, aa = inC ? aK : a, hs = hS(aa) * k, zc = szc(aa) * k, bF = inC ? p.CW : cwA(a) * k, tW = p.nW * T;
-          const R = [[bF, T, zc + hs - T / 2], [bF, T, zc - hs + T / 2], [tW, 2 * hs - 2 * T, zc]];
-          const hk = inC ? keelH(a) * k : 0; if (hk > 0) R.push([tW, hk, zc - hs - hk / 2]);
-          const A = R.reduce((s, r) => s + r[0] * r[1], 0), zn = R.reduce((s, r) => s + r[0] * r[1] * r[2], 0) / A;
-          const I = R.reduce((s, r) => s + r[0] * r[1] ** 3 / 12 + r[0] * r[1] * (r[2] - zn) ** 2, 0);
-          const e = Math.max(zc + hs - zn, zn - (zc - hs - hk));
-          return { W: I / e, h: hs * 2 + hk, what: inC ? (hk > 0 ? 'centroplán: I-nosník + kýl pod pásnicí, výška ' + Math.round(hs * 2 + hk) + ' mm' : 'centroplán: I-nosník') : 'I-nosník, pásnice ' + bF.toFixed(1).replace('.', ',') + ' mm' };
+          const tW = p.nW * T, zt = sTop(a) * k, zb = sBot(a) * k, inR = a < yF, R = [];
+          if (inR) {   // kořen: horní pásnice + hluboká stojina (+ spodní spojka), dolní pásnice tu není
+            const wb = webBot(a) * k;
+            R.push([p.CW, T, zt - T / 2], [tW, zt - T - wb, (zt - T + wb) / 2]);
+            if (a < yD) R.push([RULES.tieW, T, zDeep * k - T / 2]);
+          } else {     // I-nosník; pásnice počítána jen plným jádrem (v místě výřezů)
+            const bF = cwA(a) * k - 2 * RULES.flangeNotch;
+            R.push([bF, T, zt - T / 2], [bF, T, zb + T / 2], [tW, zt - zb - 2 * T, (zt + zb) / 2]);
+          }
+          const A = R.reduce((q, r) => q + r[0] * r[1], 0), zn = R.reduce((q, r) => q + r[0] * r[1] * r[2], 0) / A;
+          const I = R.reduce((q, r) => q + r[0] * r[1] ** 3 / 12 + r[0] * r[1] * (r[2] - zn) ** 2, 0);
+          const zlo = Math.min(...R.map(r => r[2] - r[1] / 2)), zhi = Math.max(...R.map(r => r[2] + r[1] / 2)), e = Math.max(zhi - zn, zn - zlo);
+          return { W: I / e, h: zhi - zlo, what: inR ? 'kořen: stojina 1 díl, výška ' + Math.round(zhi - zlo) + ' mm, horní pásnice' + (a < yD ? ' + spodní spojka' : '') : 'I-nosník, pásnice ' + (cwA(a) * k).toFixed(1).replace('.', ',') + ' mm, jádro ' + (cwA(a) * k - 2 * RULES.flangeNotch).toFixed(1).replace('.', ',') + ' mm' };
         },
       },
       stab: { FY, t: 2 * T, chord: y => STAB.c(Math.min(Math.abs(y), FY)) * k, zTop: RN.top.z, zStab: SZ },
@@ -389,7 +423,7 @@
       pylons: PY.map(q => Object.assign(q, { what: 'vidlice pylonu: 2 jazýčky na celou výšku profilu kolem nosníku' })),
       gear: { t: 2 * T, hUnder: 0.25 * k, arm: 2.6 * k, nCross: 3, ribsCarry: true, what: 'pásy zasazené do žeber trupu (K10)' },
     };
-    return { k, kp, EN, SZ, tS, wcx, wr: RG.wheelR, xn, nr, th, foil, struct, top, ribA, aK, aTip, aLe, sxC, sx, xLs, cwA, Pc: [sxC, 0, szc(aK)], sp1 };
+    return { k, kp, EN, SZ, tS, wcx, wr: RG.wheelR, xn, nr, th, foil, struct, top, ribA, aK, aTip, aLe, sxC: sp0, sx, xLs, cwA, yD, yF, Pc: [sp0, 0, szc(0)], sp1 };
   }
 
   global.AN225 = { buildModel, fTop: x => Math.max(fFairTop(x), fTopBody(x)), fTopBody, fBot, fW, WING, STAB, FIN, airfoil, secShape, RULES, XE };
