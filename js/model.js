@@ -70,7 +70,7 @@
     tenons: [0.3, 0.7], // čepy stojiny do horní pásnice v trupu – polohy (podíl aK)
     tenonL: 8,          // – délka čepu           // spodní spojka pod hlubokými stojinami – šířka
     stripW: 12,         // pomocná lišta křídla – šířka (rovný pás, výřezy 3 mm pro žebra z obou okrajů → jádro 6 mm)
-    gusset: 25,         // výztuhy kýlovky – odvěsna (K7), 2 ks na kýlovku (nad a pod výškovkou, z vnitřní strany)
+    tailFlangeW: 16,    // pásnice výškovky a kýlovek – šířka u kořene (u konce flangeTipW)
   };
 
   // ---------- trup
@@ -145,7 +145,7 @@
     const lam = (g, pts, O, U, V, offs, o) => { const N = crs(U, V); offs.forEach((d, i) => part(g, pts, add(O, N, d * tm), U, V, i && o && o.name ? Object.assign({}, o) : o)); };
 
     // výškovka 2 vrstvy (K6) leží na hřbetě; hřbet v oblasti kořene výškovky dorovnán k její spodní ploše
-    const tS = 2 * tm, SZ = STAB.z, sx0 = STAB.le(0), sx1 = STAB.te(0);
+    const tS = Math.max(0.1 * STAB.c(0), RULES.wingMinThick / k), SZ = STAB.z, sx0 = STAB.le(0), sx1 = STAB.te(0);   // tloušťka výškovky (souměrný profil)
     const stabPlate = x => sm(sx0 - 1.5, sx0, x) * (1 - sm(sx1, sx1 + 1.5, x));
     const top = x => Math.max(fFairTop(x), fTopBody(x) + (SZ - tS / 2 - fTopBody(x)) * stabPlate(x));
     const bot = fBot;
@@ -383,10 +383,187 @@
       part('rf', dedup(ed['1:-1'].concat(ed['1:1'].reverse(), ed['-1:1'], ed['-1:-1'].reverse())), [0, 0, zDeep - tm / 2], [1, 0, 0], [0, 1, 0], { name: 'Spodní spojka nosníku' });
     }
 
+    // ---------- ocasní plochy: rybí kost se stejnými pravidly jako křídlo (souměrný profil, min. 12 mm)
+    // Výškovka: stojina každé poloviny 1 díl (2 vrstvy) od osy po vnější bok kýlovky; v ose Λ v zářezu páteře, u osy
+    //   hluboká + spodní spojka Λ + čep do horní pásnice. Horní pásnice 1 díl Λ, dolní 2 díly od kořenového žebra.
+    //   Pásnice výškovky se u kýlovky rozšíří do tvaru jejího žebra (= dvě spodní žebra kýlovky, „patky“).
+    // Kýlovka: stojina 1 díl (2 vrstvy) prochází otvory v obou patkách (tvarový spoj – síly z bočního ohybu kýlovky
+    //   jdou otlačením přímo do pásnic výškovky), pásnice po bocích, vodorovná půlžebra, nahoře celé koncové žebro.
+    //   Pod výškovkou spodní deska kýlovky (2 vrstvy) s čepy do otvorů dolní patky.
+    const TL = {};
+    {
+      const FY = STAB.semi, hMinT = RULES.teMin / 2 / k, tmin = RULES.wingMinThick / k;
+      const halfT = (th, xx) => { xx = clamp(xx); let h = 0.5 * th * tD(xx); if (xx > 0.3) h = smax(h, hMinT); return h; };
+      // kýlovka – obrys z bokorysu (nad a pod výškovkou lineární), osa nosníku ve 30 % hloubky
+      const fL = (z, q) => z >= RN.atStab.z ? RN.atStab[q] + (RN.top[q] - RN.atStab[q]) * (z - RN.atStab.z) / (RN.top.z - RN.atStab.z)
+        : RN.bottom[q] + (RN.atStab[q] - RN.bottom[q]) * (z - RN.bottom.z) / (RN.atStab.z - RN.bottom.z);
+      const fLE = z => fL(z, 'le'), fTE = z => fL(z, 'te'), fC = z => fTE(z) - fLE(z);
+      const zA = RN.atStab.z, zTp = RN.top.z, thF = Math.max(0.1 * fC(zA), tmin), FSP = 0.3;
+      const xfA = fLE(zA) + FSP * fC(zA), sF = (fLE(zTp) + FSP * fC(zTp) - xfA) / (zTp - zA), cosF = 1 / Math.hypot(1, sF);
+      const xf = z => xfA + sF * (z - zA), hF = (z, x) => halfT(thF, (x - fLE(z)) / fC(z)), hFs = halfT(thF, FSP);
+      // výškovka – osa nosníku ve 40 % hloubky (přímka), pásnice rovinné
+      const sLE = a => STAB.le(Math.min(Math.abs(a), FY)), sC = a => STAB.te(Math.min(Math.abs(a), FY)) - sLE(a);
+      const SSP = 0.4, hT = halfT(tS, SSP);
+      const xs0 = sLE(0) + SSP * sC(0), slS = (sLE(FY) + SSP * sC(FY) - xs0) / FY, cosS = 1 / Math.hypot(1, slS);
+      const xsS = a => xs0 + slS * Math.abs(a);
+      const zUf = SZ + hT - tm / 2, zLf = SZ - hT + tm / 2;                        // střednice horní / dolní pásnice
+      const yi = FY - thF / 2 - 6 / k;                                              // vnitřní hrana patky (6 mm od boku kýlovky)
+      // u osy hluboká stojina (8 mm od obrysu trupu), pod ní spodní spojka
+      const zDeepS = SZ - 4 * hT, yDs = Math.max(0.3, hwAt(xs0 + slS * 0.5, zDeepS) - 8 / k);
+      const aKs = yDs + tm, yFs = aKs + tm / 2, aEs = yi - hwN - 1 / k;              // kořenové žebro / začátek dolní pásnice / poslední žebro
+      const nBs = Math.max(2, Math.round((aEs - aKs) / pm)), pws = (aEs - aKs) / nBs;
+      const ribS = Array.from({ length: nBs + 1 }, (_, i) => aKs + i * pws);
+      const cwS0 = RULES.tailFlangeW / k, cwST = Math.min(cwS0, Math.max(RULES.flangeTipW, p.nW * T + 2 * RULES.flangeNotch) / k);
+      const cwSA = a => cwS0 + (cwST - cwS0) * clamp((Math.abs(a) - aKs) / (aEs - aKs));
+      const UdS = sg => [slS * cosS, sg * cosS], VdS = sg => [cosS, -sg * slS * cosS];
+      const tenS = [0.5 * yDs], inTenS = a => tenS.some(c => Math.abs(Math.abs(a) - c) < tenL / 2 * cosS);
+      // okraj pásnice výškovky (strana sg = +1; s = −1 přední, +1 zadní) od a0 po patku, výřezy pro žebra Ys
+      const edgeS = (s, a0, yS, Ys) => {
+        const E = []; for (let i = 0; i <= 12; i++) { const a = a0 + (yi + 1 - a0) * i / 12; E.push(ad2([xsS(a), a], VdS(1), s * cwSA(a) / 2)); }
+        if (a0 <= 0) E[0] = [xs0 + s * cwS0 / 2 / cosS, 0];
+        const n = [-s * VdS(1)[0], -s * VdS(1)[1]];
+        return edgeOut(E, E.slice(1).map(() => n), P => Math.abs(P[1]), yS, yi, Ys, ndF);
+      };
+      // patka: obrys žebra kýlovky ve výšce zf (strana +1) od vnitřní hrany vpředu, kolem boku kýlovky, k vnitřní hraně vzadu
+      const foot = zf => {
+        const xa = fLE(zf), xb = fTE(zf), o = [[xa, yi], [xa, FY]];
+        for (let i = 1; i <= 40; i++) { const x = xa + (xb - xa) * (1 - Math.cos(Math.PI * i / 40)) / 2; o.push([x, FY + hF(zf, x)]); }
+        o.push([xb, yi]); return o;
+      };
+      const finHole = (zf, sg) => {      // otvor pro stojinu kýlovky (šikmá deska: posun sF·t přes tloušťku patky)
+        const hx = ((p.nW * tm) / cosF + sF * tm + clr) / 2, hy = hFs - tm + clr / 2, c = xf(zf);
+        return [[c - hx, sg * FY - hy], [c + hx, sg * FY - hy], [c + hx, sg * FY + hy], [c - hx, sg * FY + hy]];
+      };
+      const rectAt = (P, d, v, hl, hv) => [[-hl, -hv], [hl, -hv], [hl, hv], [-hl, hv]].map(([u, w]) => [P[0] + d[0] * u + v[0] * w, P[1] + d[1] * u + v[1] * w]);
+      const my = P => P.map(q => [q[0], -q[1]]);
+      // horní pásnice výškovky – 1 díl Λ s patkami
+      {
+        const F = edgeS(-1, 0, null, ribS), R = edgeS(1, 0, null, ribS), ft = foot(zUf);
+        const poly = dedup(F.concat(ft, R.slice().reverse(), my(R), my(ft).reverse(), my(F).reverse()));
+        const holes = [finHole(zUf, 1), finHole(zUf, -1)];
+        for (const sg of [1, -1]) for (const c of tenS) holes.push(rectAt([xsS(c), sg * c], UdS(sg), VdS(sg), (tenL + clr) / 2, (p.nW * tm + clr) / 2));
+        part('rf', poly, [0, 0, zUf], [1, 0, 0], [0, 1, 0], { name: 'Horní pásnice výškovky', holes });
+      }
+      // dolní pásnice výškovky – 2 díly od kořenového žebra, s patkou; otvory pro stojinu a čepy spodní desky kýlovky
+      const z0 = SZ - hT, le0 = fLE(z0), c0 = fC(z0), tenF = [0.35, 0.8].map(f => le0 + f * c0);
+      for (const sg of [1, -1]) {
+        const F = edgeS(-1, yFs - 1, yFs, ribS.slice(1)), R = edgeS(1, yFs - 1, yFs, ribS.slice(1));
+        let poly = dedup(F.concat(foot(zLf), R.slice().reverse()));
+        const holes = [finHole(zLf, 1)].concat(tenF.map(x => rectAt([x, FY], [1, 0], [0, 1], (tenL + clr) / 2, (2 * tm + clr) / 2)));
+        part('rf', sg > 0 ? poly : my(poly), [0, 0, zLf], [1, 0, 0], [0, 1, 0], { name: 'Dolní pásnice výškovky', holes: sg > 0 ? holes : holes.map(my) });
+      }
+      // stojiny výškovky
+      const aW = FY + thF / 2;
+      const webTopS = a => SZ + hT - (inTenS(a) ? 0 : tm);
+      const webBotS = a => { a = Math.abs(a); return a < yDs ? zDeepS : a < yFs ? SZ - hT : SZ - hT + tm; };
+      for (const sg of [1, -1]) {
+        const U = nrm([slS, sg, 0]), V = [0, 0, 1], O = [xs0, 0, 0], A = [];
+        for (let i = 0; i <= 20; i++) A.push(aW * i / 20);
+        A.push(yDs - 1e-4, yDs + 1e-4, yFs - 1e-4, yFs + 1e-4);
+        tenS.forEach(c => A.push(c - tenL / 2 * cosS - 1e-4, c - tenL / 2 * cosS + 1e-4, c + tenL / 2 * cosS - 1e-4, c + tenL / 2 * cosS + 1e-4));
+        const As = [...new Set(A.filter(a => a >= 0 && a <= aW))].sort((u, v) => u - v);
+        const pts = As.map(a => [a / cosS, webTopS(a)]).concat(As.slice().reverse().map(a => [a / cosS, webBotS(a)]));
+        sym(p.nW).forEach(d => part('sw', pts, add(O, crs(U, V), d * tm), U, V, { name: 'Stojina výškovky' }));
+      }
+      // spodní spojka výškovky – Λ pod hlubokou částí stojin
+      {
+        const ed = {};
+        for (const sg of [1, -1]) for (const s2 of [-1, 1]) {
+          const A0 = [xs0 + s2 * wTie / 2 / cosS, 0], n = [-s2 * VdS(sg)[0], -s2 * VdS(sg)[1]];
+          ed[sg + ':' + s2] = edgeOut([A0, ad2(A0, UdS(sg), yDs * 1.5 / cosS)], [n], P => Math.abs(P[1]), null, yDs, [], 0);
+        }
+        part('rf', dedup(ed['1:-1'].concat(ed['1:1'].reverse(), ed['-1:1'], ed['-1:-1'].reverse())), [0, 0, zDeepS - tm / 2], [1, 0, 0], [0, 1, 0], { name: 'Spodní spojka výškovky' });
+      }
+      // obecné žebro: obrys mezi up(x) a lo(x), lože pro jádro pásnic (rebT/rebB: [x0, x1, úroveň])
+      const ribG = (le, c, xA, xB, up, lo, rebT, rebB) => {
+        const lvl = (L, x) => { for (const [p0, p1, z] of L) if (x > p0 + 1e-6 && x < p1 - 1e-6) return z; return null; };
+        const xs = new Set([xA, xB]);
+        for (let i = 0; i <= 48; i++) { const x = le + c * (1 - Math.cos(Math.PI * i / 48)) / 2; if (x > xA && x < xB) xs.add(x); }
+        for (const [p0, p1] of rebT.concat(rebB)) for (const x of [p0 - 1e-4, p0 + 1e-4, p1 - 1e-4, p1 + 1e-4]) if (x > xA && x < xB) xs.add(x);
+        const X = [...xs].sort((u, v) => u - v);
+        const tp = X.map(x => { const z = lvl(rebT, x), v = up(x); return [x, z == null ? v : Math.min(v, z)]; });
+        const bt = X.map(x => { const z = lvl(rebB, x), v = lo(x); return [x, z == null ? v : Math.max(v, z)]; }).reverse();
+        if (Math.abs(bt[bt.length - 1][1] - tp[0][1]) < 1e-6) bt.pop();
+        if (Math.abs(bt[0][1] - tp[tp.length - 1][1]) < 1e-6) bt.shift();
+        return tp.concat(bt);
+      };
+      // půlžebra výškovky (přední + zadní na stojině), lože pro jádro pásnic
+      const dxwS = webH / cosS;
+      for (const sg of [1, -1]) ribS.forEach((a, i) => {
+        const le = sLE(a), c = sC(a), xs = xsS(a), fcx = (cwSA(a) / 2 - ndF) / cosS;
+        const up = x => SZ + halfT(tS, (x - le) / c), lo = x => SZ - halfT(tS, (x - le) / c), zT = SZ + hT - tm, zB = SZ - hT + tm;
+        const nm = i ? 'Půlžebro výškovky' : 'Kořenové půlžebro výškovky';
+        part('tl', ribG(le, c, le, xs - dxwS, up, lo, [[xs - fcx, xs + 1, zT]], i ? [[xs - fcx, xs + 1, zB]] : []), [0, sg * a, 0], [1, 0, 0], [0, 0, 1], { name: nm + ' přední' });
+        part('tl', ribG(le, c, xs + dxwS, le + c, up, lo, [[xs - 1, xs + fcx, zT]], i ? [[xs - 1, xs + fcx, zB]] : []), [0, sg * a, 0], [1, 0, 0], [0, 0, 1], { name: nm + ' zadní' });
+      });
+      // kýlovka: žebra od horní patky po vrchol (poslední = celé koncové žebro)
+      const zTop = RN.top.z - tm / 2, zb = SZ + hT;
+      const nF = Math.max(2, Math.round((zTop - zUf) / pm)), pwF = (zTop - zUf) / nF;
+      const ribF = Array.from({ length: nF }, (_, j) => zUf + (j + 1) * pwF);
+      const cwFA = z => cwS0 + (cwST - cwS0) * clamp((z - zb) / (zTop - zb));
+      const dxwF = webH / cosF;
+      for (const sg of [1, -1]) {
+        const yc = sg * FY;
+        ribF.forEach((z, j) => {
+          const le = fLE(z), c = fC(z), xw = xf(z), fcx = (cwFA(z) / 2 - ndF) / cosF;
+          const up = x => yc + hF(z, x), lo = x => yc - hF(z, x), yT = yc + hFs - tm, yB = yc - hFs + tm;
+          if (j === nF - 1) { part('tl', ribG(le, c, le, le + c, up, lo, [], []), [0, 0, z], [1, 0, 0], [0, 1, 0], { name: 'Koncové žebro kýlovky' }); return; }
+          part('tl', ribG(le, c, le, xw - dxwF, up, lo, [[xw - fcx, xw + 1, yT]], [[xw - fcx, xw + 1, yB]]), [0, 0, z], [1, 0, 0], [0, 1, 0], { name: 'Půlžebro kýlovky přední' });
+          part('tl', ribG(le, c, xw + dxwF, le + c, up, lo, [[xw - 1, xw + fcx, yT]], [[xw - 1, xw + fcx, yB]]), [0, 0, z], [1, 0, 0], [0, 1, 0], { name: 'Půlžebro kýlovky zadní' });
+        });
+        // stojina kýlovky: od spodní plochy dolní patky po koncové žebro, mezi pásnicemi
+        const dF = nrm([sF, 0, 1]), zw1 = zTop - tm / 2, L = (zw1 - z0) / cosF, hv = hFs - tm;
+        const Ow = [xf(z0), yc, z0];
+        sym(p.nW).forEach(d => part('sw', [[0, -hv], [L, -hv], [L, hv], [0, hv]], add(Ow, crs(dF, [0, 1, 0]), d * tm), dF, [0, 1, 0], { name: 'Stojina kýlovky' }));
+        // pásnice kýlovky po obou bocích: od horní patky po koncové žebro, výřezy pro žebra
+        const Vf = [cosF, -sF * cosF];
+        for (const s2 of [-1, 1]) {
+          const ed = {};
+          for (const s of [-1, 1]) {
+            const E = [ad2([xf(zb - 1.5), zb - 1.5], Vf, s * cwFA(zb) / 2), ad2([xf(zw1 + 1.5), zw1 + 1.5], Vf, s * cwFA(zw1) / 2)];
+            ed[s] = edgeOut(E, [[-s * Vf[0], -s * Vf[1]]], P => P[1], zb, zw1, ribF.slice(0, nF - 1), ndF);
+          }
+          part('rf', dedup(ed[-1].concat(ed[1].reverse())), [0, yc + s2 * (hFs - tm / 2), 0], [1, 0, 0], [0, 0, 1], { name: 'Pásnice kýlovky' });
+        }
+        // spodní deska kýlovky pod výškovkou (2 vrstvy) s čepy do dolní patky
+        const zB0 = RN.bottom.z, hl = tenL / 2, P = [[fLE(zB0), zB0], [fTE(zB0), zB0], [fTE(z0), z0]];
+        for (const x of tenF.slice().reverse()) P.push([x + hl, z0], [x + hl, z0 + tm], [x - hl, z0 + tm], [x - hl, z0]);
+        P.push([fLE(z0), z0]);
+        lam('tl', P, [0, yc, 0], [1, 0, 0], [0, 0, 1], [-0.5, 0.5], { name: 'Spodní deska kýlovky' });
+      }
+
+      TL.spar = { x0: xs0, sl: slS, aMax: yDs, d: Math.max(webH / cosS, wTie / 2 / cosS) + tm / 2 + clr, gb: () => zDeepS - tm };
+      // popis pro výpočet namáhání (mm)
+      const secW = R => {
+        const A = R.reduce((q, r) => q + r[0] * r[1], 0), zn = R.reduce((q, r) => q + r[0] * r[1] * r[2], 0) / A;
+        const I = R.reduce((q, r) => q + r[0] * r[1] ** 3 / 12 + r[0] * r[1] * (r[2] - zn) ** 2, 0);
+        return I / Math.max(...R.map(r => Math.max(r[2] + r[1] / 2 - zn, zn - r[2] + r[1] / 2)));
+      };
+      const tW = p.nW * T, h = hT * k, n1 = v => v.toFixed(1).replace('.', ',');
+      TL.struct = {
+        stab: {
+          FY, aK: aKs,
+          sec: a => {
+            a = Math.abs(a);
+            if (a < yDs) { const zd = (zDeepS - SZ) * k; return { W: secW([[cwS0 * k, T, h - T / 2], [tW, h - T - zd, (h - T + zd) / 2], [RULES.tieW, T, zd - T / 2]]), what: 'u osy: hluboká stojina + horní pásnice + spodní spojka' }; }
+            if (a < yFs) return { W: secW([[cwS0 * k, T, h - T / 2], [tW, 2 * h - T, -T / 2]]), what: 'stojina + horní pásnice' };
+            const bF = cwSA(a) * k - 2 * RULES.flangeNotch;
+            return { W: secW([[bF, T, h - T / 2], [bF, T, -h + T / 2], [tW, 2 * h - 2 * T, 0]]), what: 'I-nosník, jádro pásnic ' + n1(bF) + ' mm' };
+          },
+        },
+        fin: {
+          zTop: RN.top.z, zStab: zb,
+          sec: z => { const bF = cwFA(z) * k - 2 * RULES.flangeNotch, hf = hFs * k; return { W: secW([[bF, T, hf - T / 2], [bF, T, -hf + T / 2], [tW, 2 * hf - 2 * T, 0]]), what: 'I-nosník kýlovky, jádro pásnic ' + n1(bF) + ' mm' }; },
+        },
+        finJoint: { hc: (2 * hT - tm) * k, Ab: tW * T, what: 'stojina kýlovky v otvorech obou patek (otlačení)' },
+      };
+    }
+
     // žebra trupu – tvar z řezů výkresu (G2), výška z bokorysu, šířka z půdorysu; pravidelně i v místě kořene křídla.
     // Žebro, které kříží hluboké stojiny (Λ), má zářez shora: v ose (stojiny blízko osy) do U – boční ramena obejmou
     // stojiny, u boku trupu (stojiny vycházejí z trupu) zářez z horního rohu. Dno zářezu = spodní hrana stojin / spojky.
-    const NZ = 64, wMin = RULES.minWidth / k, dSp = Math.max(webH / cosP, wTie / 2 / cosP) + tm / 2 + clr;
+    const NZ = 64, wMin = RULES.minWidth / k;
+    const SPARS = [{ x0: sp0, sl: slope, aMax: aK, d: Math.max(webH / cosP, wTie / 2 / cosP) + tm / 2 + clr, gb: a => webBot(a) - (a < yD ? tm : 0) }, TL.spar];
     for (const x of ribX) {
       const b = bot(x), t = top(x), H = t - b, S = secShape(x), w = fW(x);
       if (H < 0.4 || w < 0.3) continue;
@@ -394,10 +571,11 @@
       const Z = []; for (let i = 0; i <= NZ; i++) Z.push(b + H * i / NZ);
       const side = Z.map(z => [Math.max(0.02, hz(z)), z]);
       let right = side;
-      const a1 = (x - dSp - sp0) / slope, a2 = (x + dSp - sp0) / slope;     // rozsah stojin (|y|) v rovině žebra
-      if (a2 > 0 && a1 < Math.min(aK, w)) {
+      for (const SP of SPARS) {
+        const a1 = (x - SP.d - SP.x0) / SP.sl, a2 = (x + SP.d - SP.x0) / SP.sl;     // rozsah stojin (|y|) v rovině žebra
+        if (!(a2 > 0 && a1 < Math.min(SP.aMax, w))) continue;
         let gB = Infinity;
-        for (let i = 0; i <= 20; i++) { const a = Math.max(0, a1) + (Math.min(aK, a2) - Math.max(0, a1)) * i / 20; gB = Math.min(gB, webBot(a) - (a < yD ? tm : 0)); }
+        for (let i = 0; i <= 20; i++) { const a = Math.max(0, a1) + (Math.min(SP.aMax, a2) - Math.max(0, a1)) * i / 20; gB = Math.min(gB, SP.gb(a)); }
         gB -= clr;
         const up = (z0, f) => { let z = z0; while (z < t && f(z)) z += H / 400; return z; };   // první výška nad z0, kde f neplatí
         if (a1 <= 0) {          // stojiny u osy: zářez do U, ramena vně stojin (šířka ramene ≥ min. šířka)
@@ -410,6 +588,7 @@
           const zB = up(gB, z => hz(z) > a1);
           right = side.filter(q => q[1] < gB - 1e-6).concat([[hz(gB), gB], [a1, gB], [a1, zB]], side.filter(q => q[1] > zB + 1e-6));
         }
+        break;
       }
       const pts = dedup(right.concat(right.slice().reverse().map(q => [-q[0], q[1]])));
       part('rb', pts, [x, 0, 0], [0, 1, 0], [0, 0, 1], { name: 'Žebro trupu' });
@@ -442,7 +621,7 @@
     const emid = e => aK + (Math.round((e - aK) / pw - 0.5) + 0.5) * pw; // motor přesně mezi dvě žebra
     const ENG = RE.y.map(emid);
     const EN = [], PY = [];
-    let kp = null;
+    let kp = FIN.map(q => q.slice());
     const nfs = Math.max(0, Math.floor(((pw * k - T) / T - 2) / 2)); // výplně mezi jazýčkem pylonu a žebry
     for (const sg of [1, -1]) {
       // gondoly + pylony: pylon nasazen zespodu výřezem na nosník (lepí se), prstence 1 vrstva, výřezy 50/50
@@ -494,22 +673,6 @@
         }
       });
 
-      // výškovka – jeden díl přes celé rozpětí, 2 vrstvy (K6); vizualizace po polovinách
-      const FY = STAB.semi, tipA = FY + tm, pl = [];
-      for (let a = 0; a <= tipA + 1e-6; a += tipA / 8) pl.push([STAB.le(Math.min(a, FY)), a]);
-      for (let a = tipA; a >= -1e-6; a -= tipA / 8) pl.push([STAB.te(Math.min(a, FY)), a]);
-      const plY = pl.map(q => [q[0], sg * q[1]]);
-      lam('tl', plY, [0, 0, SZ], [1, 0, 0], [0, 1, 0], [-0.5, 0.5], sg < 0 ? { noCount: true, name: 'Výškovka' } : { name: 'Výškovka', dims: [2 * tipA * k, STAB.c(0) * k] });
-      // kýlovky – 2 vrstvy, vodorovný zářez od odtokové hrany pro výškovku
-      kp = FIN.map(q => q.slice());
-      lam('tl', kp, [0, sg * FY, 0], [1, 0, 0], [0, 0, 1], [-0.5, 0.5], { name: 'Kýlovka' });
-      // výztuhy spoje kýlovka–výškovka (K7): 2 trojúhelníky z vnitřní strany (nad a pod výškovkou)
-      const g = RULES.gusset / k, xg = (STAB.le(FY) + STAB.te(FY)) / 2;
-      for (const ud of [1, -1]) {
-        const y0 = sg * (FY - tm), z0 = SZ + ud * tS / 2;
-        part('tl', [[y0, z0], [y0 - sg * g, z0], [y0, z0 + ud * g]], [xg, 0, 0], [0, 1, 0], [0, 0, 1], { name: 'Výztuha kýlovky' });
-      }
-      jn([xg, sg * FY, SZ], 1.2, 'fin');
 
       // podvozek (G5, K10): podélné pásy zasazené do žeber trupu, 7 kol
       const wr = RG.wheelR, wcx = RG.mainX, yT = 2.6;
@@ -517,7 +680,6 @@
       const bz = x => { let z = wr + 0.12; for (const c of wcx) { const d = x - c; if (Math.abs(d) < wr) z = Math.min(z, wr - Math.sqrt(wr * wr - d * d)); } return z; };
       lam('gr', prof(gx0, gx1, x => bot(x) + 1.1, bz, 0.06), [0, sg * yT, 0], [1, 0, 0], [0, 0, 1], [-0.5, 0.5], { name: 'Podvozkový pás' });
     }
-    jn([(sx0 + sx1) / 2, 0, SZ - tS / 2], 1.2, 'stab');
     const wcx = RG.mainX;
     for (const xr of [wcx[1], (wcx[3] + wcx[4]) / 2, wcx[5] + 0.4]) {
       const x = mid(xr);
@@ -530,7 +692,6 @@
     jn([xn, 0, bot(xn) + 0.4], 1.3, 'nose');
 
     // ---------- popis nosné konstrukce pro výpočet namáhání (mm, N) – viz js/stress.js
-    const FY = STAB.semi, gmm = RULES.gusset;
     const struct = {
       k, T,
       wing: {
@@ -554,9 +715,7 @@
           return { W: I / e, h: zhi - zlo, what: inR ? 'kořen: stojina 1 díl, výška ' + Math.round(zhi - zlo) + ' mm, horní pásnice' + (a < yD ? ' + spodní spojka' : '') : 'I-nosník, pásnice ' + (cwA(a) * k).toFixed(1).replace('.', ',') + ' mm, jádro ' + (cwA(a) * k - 2 * RULES.flangeNotch).toFixed(1).replace('.', ',') + ' mm' };
         },
       },
-      stab: { FY, t: 2 * T, chord: y => STAB.c(Math.min(Math.abs(y), FY)) * k, zTop: RN.top.z, zStab: SZ },
-      fin: { t: 2 * T, chord: z => finChord(Math.min(Math.max(z, SZ), RN.top.z)) * k, zTop: RN.top.z, zStab: SZ, zBot: RN.bottom.z },
-      finJoint: { L: STAB.c(FY) * k, b: 2 * T, extra: 2 * T * gmm * gmm / 6, what: 'zářez kýlovky + 2 výztuhy ' + gmm + ' mm' },
+      stab: TL.struct.stab, fin: TL.struct.fin, finJoint: TL.struct.finJoint,
       spine: { t: p.nS * T, hNet: x => Math.max(0.1, (top(x) - bot(x)) * k * 0.6), xSupport: (wcx[0] + wcx[wcx.length - 1]) / 2, xFin: (RN.top.le + RN.top.te) / 2, xA0: sx0, xA1: sx1 },
       pylons: PY.map(q => Object.assign(q, { what: 'vidlice pylonu: 2 jazýčky na celou výšku profilu kolem nosníku' })),
       gear: { t: 2 * T, hUnder: 0.25 * k, arm: 2.6 * k, nCross: 3, ribsCarry: true, what: 'pásy zasazené do žeber trupu (K10)' },

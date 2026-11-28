@@ -7,7 +7,7 @@
   // Materiál: bříza 3 mm, 3 vrstvy. Pevnost v ohybu ve směru vlákna krycí dýhy ~50–70 MPa,
   // bereme 40 MPa (tenká deska, rozptyl, zářezy). Lepený spoj namáhaný odtržením kolmo
   // k povrchu (PVAc + povrchová dýha) ~2 MPa.
-  const MAT = { fm: 40, fPeel: 2.0 };
+  const MAT = { fm: 40, fPeel: 2.0, fBear: 15 };   // fBear: otlačení hrany překližky (čep v otvoru)
 
   // Zatěžovací stavy – hraní 8letého dítěte (zvednutí, tlak rukou, „přistání“), ne pády.
   const LC = [
@@ -23,10 +23,12 @@
     const st = S.stab, fn = S.fin, w = S.wing, sp = S.spine, g = S.gear;
     // --- jednotlivé kontroly: vrací {u, s (MPa), what}
     const wingAt = a => { const q = w.sec(a), M = F * w.lever(a), s = M / q.W; return { u: s / fm, s, what: q.what }; };
-    const stabV = y => { const c = st.chord(y), M = F * Math.max(0, st.FY - Math.abs(y)) * k, s = M / (c * st.t ** 2 / 6); return { u: s / fm, s }; };
-    const stabS = y => { const c = st.chord(y), M = F * (st.zTop - st.zStab) * k, s = M / (c * st.t ** 2 / 6); return { u: s / fm, s }; };
-    const finS = z => { if (z < fn.zStab) return { u: 0, s: 0 }; const c = fn.chord(z), M = F * (fn.zTop - z) * k, s = M / (c * fn.t ** 2 / 6); return { u: s / fm, s }; };
-    const finJ = () => { const j = S.finJoint, M = F * (fn.zTop - fn.zStab) * k, Wg = j.L * j.b ** 2 / 6 + j.extra, s = M / Wg; return { u: s / fp, s, what: j.what }; };
+    const stabV = y => { const q = st.sec(y), M = F * Math.max(0, st.FY - Math.abs(y)) * k, s = M / q.W; return { u: s / fm, s, what: q.what }; };
+    const stabS = y => { const q = st.sec(y), M = F * (fn.zTop - fn.zStab) * k, s = M / q.W; return { u: s / fm, s, what: q.what }; };
+    const finS = z => { if (z < fn.zStab) return { u: 0, s: 0 }; const q = fn.sec(z), M = F * (fn.zTop - z) * k, s = M / q.W; return { u: s / fm, s, what: q.what }; };
+    // spoj kýlovka–výškovka: moment kýlovky = dvojice sil v horní a dolní patce, stojina je otlačuje v otvorech
+    const finJ = () => { const j = S.finJoint, M = F * (fn.zTop - fn.zStab) * k, s = M / j.hc / j.Ab; return { u: s / MAT.fBear, s, what: j.what }; };
+    const isTail = n => /výškov|kýlov/.test(n || ''), isStab = n => /výškov/.test(n || '');
     // ocas: síla z kýlovek vstupuje do páteře přes kořen výškovky (xA0…xA1) – za ním páteř nenese nic
     const spineV = x => {
       if (x < sp.xSupport) return { u: 0, s: 0 };
@@ -49,17 +51,17 @@
       const y = Math.abs(P[1]);
       switch (id) {
         case 'wing':
-          if ((grp === 'sw' || grp === 'wg' || (grp === 'rf' && name === 'Pásnice nosníku')) && y <= w.semi) return wingAt(y).u;
+          if (!isTail(name) && (grp === 'sw' || grp === 'wg' || (grp === 'rf' && /nosníku/.test(name))) && y <= w.semi) return wingAt(y).u;
           return null;
         case 'tailV':
-          if (grp === 'tl' && name === 'Výškovka') return stabV(y).u;
-          if (grp === 'tl') return 0.02;
+          if (isStab(name)) return stabV(Math.min(y, st.FY)).u;
+          if (isTail(name)) return 0.02;
           if (grp === 'sp') return P[0] < sp.xSupport ? null : spineV(P[0]).u;
           return null;
         case 'tailS':
-          if (grp === 'tl' && name === 'Výškovka') return stabS(y).u;
-          if (grp === 'tl' && name === 'Výztuha kýlovky') return finJ().u;   // spoj kýlovka–výškovka
-          if (grp === 'tl') return finS(P[2]).u;
+          if (isStab(name) && /pásnice/.test(name) && y > st.FY - 1) return Math.max(finJ().u, stabS(st.FY).u);   // patky
+          if (isStab(name)) return stabS(Math.min(y, st.FY)).u;
+          if (isTail(name)) return P[2] < fn.zStab ? 0.05 : finS(P[2]).u;
           return null;
         case 'eng': {
           if (grp === 'en' && name === 'Gondola + pylon') return pyl(nearPylon(y)).root.u;
@@ -87,11 +89,11 @@
       push(`Nejslabší průřez nosníku (${(worst.a * k / 10).toFixed(0)} cm od osy)`, worst.r);
       push('Nosník v 70 % polorozpětí', wingAt(0.7 * w.semi));
     } else if (id === 'tailV') {
-      push('Výškovka u trupu', stabV(1.5)); push('Výškovka v polovině', stabV(st.FY / 2));
+      push('Výškovka v ose (hluboké stojiny)', stabV(0.2)); push('Výškovka u kořenového žebra', stabV(st.aK + 0.05)); push('Výškovka v polovině', stabV(st.FY / 2));
       let m = { u: 0, s: 0 }; for (let x = sp.xSupport; x < sp.xFin; x += 0.5) { const r = spineV(x); if (r.u > m.u) m = r; } push('Páteř (ocasní část)', m);
     } else if (id === 'tailS') {
-      push('Spoj kýlovka–výškovka (odtržení lepení)', finJ()); push('Kýlovka nad výškovkou', finS(st.zStab + 0.01));
-      push('Výškovka u kýlovky', stabS(st.FY)); push('Výškovka u trupu', stabS(1.5));
+      push('Spoj kýlovka–výškovka (stojina v otvorech patek)', finJ()); push('Kýlovka nad výškovkou', finS(fn.zStab + 0.01));
+      push('Výškovka u kýlovky', stabS(st.FY - 0.5)); push('Výškovka u kořenového žebra', stabS(st.aK + 0.05));
     } else if (id === 'eng') {
       S.pylons.forEach((q, i) => { const r = pyl(q); push(`Pylon ${i + 1} – lepení jazýčku`, r.joint); push(`Pylon ${i + 1} – ohyb u křídla`, r.root); });
     } else if (id === 'gear') {
