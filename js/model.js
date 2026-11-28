@@ -118,11 +118,12 @@
   WING.c = y => WING.te(y) - WING.le(y);
   const tD = pchip(RW.tDist);
   // profil: le, c, z (střední čára u náběžné hrany), th = tloušťka, cam = prohnutí, hMin = min. poloviční tloušťka zadní části
+  const smax = (a, b) => { const e = 0.6 * b; return (a + b + Math.sqrt((a - b) * (a - b) + e * e)) / 2; }; // hladké maximum (tupá odtoková hrana bez zlomu)
   function airfoil(le, c, z0, th, cam, hMin) {
-    const N = 18, up = [], lo = [];
+    const N = 48, up = [], lo = [];
     for (let i = 0; i <= N; i++) {
       const xx = (1 - Math.cos(Math.PI * i / N)) / 2, mc = z0 + cam * c * 4 * xx * (1 - xx);
-      let h = 0.5 * th * tD(xx); if (xx > 0.5) h = Math.max(h, hMin || 0);
+      let h = 0.5 * th * tD(xx); if (xx > 0.3 && hMin) h = smax(h, hMin);
       up.push([le + xx * c, mc + h]); lo.push([le + xx * c, mc - h]);
     }
     return up.concat(lo.reverse().slice(1, -1));
@@ -148,7 +149,32 @@
     const stabPlate = x => sm(sx0 - 1.5, sx0, x) * (1 - sm(sx1, sx1 + 1.5, x));
     const top = x => Math.max(fFairTop(x), fTopBody(x) + (SZ - tS / 2 - fTopBody(x)) * stabPlate(x));
     const bot = fBot;
-    const hwAt = (x, z) => { const H = top(x) - bot(x); return H <= 0 ? 0 : sAt(secShape(x), (z - bot(x)) / H) * fW(x); };
+    // poloviční šířka řezu trupu ve výšce z. Hřbet je zaoblený: od 80 % výšky přechází obrys plynule (Bézierova křivka
+    // navazující tečně na boky) do vodorovného vršku široké jen jako páteř + 1 mm na stranu (tam žebro sedí na páteři).
+    const hsSp = (p.nS * T / 2 + 1) / k, CAP = 0.8, secC = new Map();
+    const secAt = x => {
+      let f = secC.get(x); if (f) return f;
+      const b = bot(x), t = top(x), H = t - b, S = secShape(x), w = fW(x);
+      const base = z => sAt(S, (z - b) / H) * w;
+      if (H <= 0) f = () => 0;
+      else {
+        const z1 = b + CAP * H, y1 = base(z1);
+        if (y1 <= hsSp * 1.5) f = base;
+        else {
+          const dy = (y1 - base(z1 - 0.02 * H)) / (0.02 * H), n = Math.hypot(dy, 1), L = 0.5 * (t - z1);
+          const P = [[y1, z1], [y1 + dy / n * L, z1 + L / n], [hsSp + 0.55 * (y1 - hsSp), t], [hsSp, t]];
+          const bz = (u, i) => { const v = 1 - u; return v * v * v * P[0][i] + 3 * v * v * u * P[1][i] + 3 * v * u * u * P[2][i] + u * u * u * P[3][i]; };
+          f = z => {
+            if (z <= z1) return base(z);
+            if (z >= t) return hsSp;
+            let lo = 0, hi = 1; for (let i = 0; i < 32; i++) { const m = (lo + hi) / 2; if (bz(m, 1) < z) lo = m; else hi = m; }
+            return bz((lo + hi) / 2, 0);
+          };
+        }
+      }
+      secC.set(x, f); return f;
+    };
+    const hwAt = (x, z) => secAt(x)(z);
 
     // páteř (2 vrstvy) – dělení mezi dvěma žebry
     const x0 = pm / 2 + 0.25, ribX = [];
@@ -186,7 +212,7 @@
     const hMin = RULES.teMin / 2 / k;
     const camAt = (a, xx) => RW.camber * W.c(a) * 4 * xx * (1 - xx);
     const ae = a => Math.max(Math.abs(a), aK);                  // uvnitř trupu (mezi kořenovými žebry) má křídlo profil kořenového žebra, bez vzepětí
-    const surf = (a, x, s) => { a = ae(a); const c = W.c(a), xx = clamp((x - W.le(a)) / c); let h = 0.5 * th(a) * tD(xx); if (xx > 0.5) h = Math.max(h, hMin); return W.z(a) + camAt(a, xx) + s * h; };
+    const surf = (a, x, s) => { a = ae(a); const c = W.c(a), xx = clamp((x - W.le(a)) / c); let h = 0.5 * th(a) * tD(xx); if (xx > 0.3) h = smax(h, hMin); return W.z(a) + camAt(a, xx) + s * h; };
     const foil = a => airfoil(W.le(ae(a)), W.c(ae(a)), W.z(ae(a)), th(ae(a)), RW.camber, hMin);
     const sTop = a => surf(a, sx(a), 1), sBot = a => surf(a, sx(a), -1);
     const szc = a => (sTop(a) + sBot(a)) / 2, hS = a => (sTop(a) - sBot(a)) / 2;
@@ -364,7 +390,7 @@
     for (const x of ribX) {
       const b = bot(x), t = top(x), H = t - b, S = secShape(x), w = fW(x);
       if (H < 0.4 || w < 0.3) continue;
-      const hz = z => sAt(S, (z - b) / H) * w;
+      const hz = secAt(x);
       const Z = []; for (let i = 0; i <= NZ; i++) Z.push(b + H * i / NZ);
       const side = Z.map(z => [Math.max(0.02, hz(z)), z]);
       let right = side;
@@ -393,7 +419,7 @@
     const ribPoly = (a, xA, xB, rebT, rebB) => {
       const lvl = (L, x) => { for (const [p0, p1, z] of L) if (x > p0 + 1e-6 && x < p1 - 1e-6) return z; return null; };
       const le = W.le(ae(a)), c = W.c(ae(a)), xs = new Set([xA, xB]);
-      for (let i = 0; i <= 24; i++) { const x = le + c * (1 - Math.cos(Math.PI * i / 24)) / 2; if (x > xA && x < xB) xs.add(x); }
+      for (let i = 0; i <= 64; i++) { const x = le + c * (1 - Math.cos(Math.PI * i / 64)) / 2; if (x > xA && x < xB) xs.add(x); }
       for (const [p0, p1] of rebT.concat(rebB)) for (const x of [p0 - 1e-4, p0 + 1e-4, p1 - 1e-4, p1 + 1e-4]) if (x > xA && x < xB) xs.add(x);
       const X = [...xs].sort((u, v) => u - v);
       const tp = X.map(x => { const z = lvl(rebT, x), s = surf(a, x, 1); return [x, z == null ? s : Math.min(s, z)]; });

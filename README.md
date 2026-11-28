@@ -47,6 +47,7 @@ Všechny rozměry letadla jsou v `js/an225-ref.js` se značkou původu (oficiál
 ### Trup
 - Tvar žeber z řezů 1-1 … 9-9 výkresu (normalizovaný tvar, mezi řezy plynulé prolnutí), výška z bokorysu, šířka z půdorysu.
 - **Hladký obrys žeber** (29. 11.): řezy vyhlazené ([1 2 1]/4, 2×, největší šířka zachována), nad nejširším místem bez dutého přechodu (horní obálka), mezi body kubická interpolace (64 bodů na stranu). Řez 5-5 (za křídlem) má vypouklý eliptický vršek místo úzkého hřbetu s dutým přechodem [E].
+- **Zaoblený hřbet** (29. 11.): od 80 % výšky řezu přechází bok plynule (Bézierova křivka navazující tečně) do vodorovného vršku širokého jen jako páteř + 1 mm na stranu – plocho je jen tam, kde žebro sedí na páteři.
 - **Žebra i v místě kořene křídla** v pravidelném rozestupu (dříve 3 vynechaná): žebro, které kříží hluboké stojiny, má zářez shora – u osy tvaru U (ramena vně stojin, dno pod spodní spojkou), u boku trupu zářez z horního rohu. Nosník se do zářezů vkládá shora.
 - **Boční podélníky** (K5): vodorovné pásy 10 mm ve výšce 3,8 m (skut.), od přídě po ~66 m, zasunuté do bočních zářezů žeber → každé žebro drženo ve 3 bodech.
 
@@ -61,7 +62,7 @@ Výkresy dílů: [`docs/parts/`](docs/parts/) (generuje `node tools/parts/sheets
 - **Žebra**: pravidelně 25 polí po 15,2 mm, všechna (i kořenové) jako **přední + zadní půlžebro** lepené na stojinu, s loží pro jádro pásnic a pro lištu. **Konec křídla uzavírá celé koncové žebro** (43,8 m) s plným profilem – stojina i pásnice končí na jeho vnitřní ploše.
 - **Pomocná lišta**: rovný pás 12 × 3 mm, 1 díl na křídlo, zespodu za nosníkem, od vnější plochy kořenového žebra (65 % hloubky) po vnitřní plochu žebra ve 27,9 m. **Výřezy pro žebra jako u pásnic** (3 mm z obou okrajů, boky rovnoběžné s rovinou žebra), jádro 6 mm leží v ložích zadních půlžeber.
 - Zrušeno: centroplán s kýlem (26. 11.), 2. vrstva pásnic ±6 m (K2), příložky páteře.
-- Profil podle řezů výkresu (max. tloušťka ve 40 %), relativní tloušťka 12 % → 10 %; **min. tloušťka profilu 12 mm**, **odtoková hrana tupá ≥ 3 mm** (G6).
+- Profil podle řezů výkresu (max. tloušťka ve 40 %), relativní tloušťka 12 % → 10 %; **min. tloušťka profilu 12 mm**, **odtoková hrana tupá ≥ 3 mm** (G6), přechod do tupé odtokové hrany hladký (bez zlomu), obrys žebra 64 bodů.
 
 ### Gondoly
 - **Gondola + pylon** 2 vrstvy, motor vždy přesně mezi dvěma žebry. Pylon se **nasazuje zespodu**: horní okraj má výřez pro nosník (dosedá na dolní pásnici) a dva jazýčky na celou výšku profilu před a za nosníkem, mezera k žebrům vyplněna výplněmi (nutné – nesou boční ohyb pylonu, viz historie 17). **Spoj se musí slepit** (tření nestačí). Zadní jazýček má lože pro pomocnou lištu.

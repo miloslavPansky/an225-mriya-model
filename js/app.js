@@ -97,13 +97,29 @@
     C.lookAt(tgt); R.render(SC, C);
   }
   function orbit(el) {
-    const pts = new Map(); let pd = 0;
-    el.addEventListener('pointerdown', e => { el.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); if (pts.size === 2) { const a = [...pts.values()]; pd = Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]); } });
+    const pts = new Map(); let pd = 0, pan = false;
+    // posun náhledu v rovině obrazovky (o dx, dy pixelů) – cíl kamery se posune spolu s kamerou
+    const panBy = (dx, dy) => {
+      if (!C) return; C.updateMatrixWorld();
+      const s = 2 * dist * Math.tan(C.fov * Math.PI / 360) / (el.clientHeight || 1);
+      tgt.addScaledVector(new THREE.Vector3().setFromMatrixColumn(C.matrixWorld, 0), -dx * s).addScaledVector(new THREE.Vector3().setFromMatrixColumn(C.matrixWorld, 1), dy * s);
+    };
+    const mid = () => { const a = [...pts.values()]; return [(a[0][0] + a[1][0]) / 2, (a[0][1] + a[1][1]) / 2]; };
+    el.addEventListener('contextmenu', e => e.preventDefault());
+    el.addEventListener('pointerdown', e => {
+      el.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
+      pan = pts.size === 1 && (e.button === 1 || e.button === 2 || e.shiftKey);
+      if (pts.size === 2) { const a = [...pts.values()]; pd = Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]); }
+    });
     el.addEventListener('pointermove', e => {
       if (!pts.has(e.pointerId)) return; const o = pts.get(e.pointerId);
-      if (pts.size === 1) { yaw -= (e.clientX - o[0]) * 0.01; pit = Math.max(-1.55, Math.min(1.55, pit + (e.clientY - o[1]) * 0.01)); }
+      if (pts.size === 1) {
+        if (pan) panBy(e.clientX - o[0], e.clientY - o[1]);
+        else { yaw -= (e.clientX - o[0]) * 0.01; pit = Math.max(-1.55, Math.min(1.55, pit + (e.clientY - o[1]) * 0.01)); }
+      }
+      const m0 = pts.size === 2 ? mid() : null;
       pts.set(e.pointerId, [e.clientX, e.clientY]);
-      if (pts.size === 2) { const a = [...pts.values()], nd = Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]); if (pd && nd) dist *= pd / nd; pd = nd; }
+      if (pts.size === 2) { const a = [...pts.values()], nd = Math.hypot(a[0][0] - a[1][0], a[0][1] - a[1][1]), m1 = mid(); if (pd && nd) dist *= pd / nd; pd = nd; panBy(m1[0] - m0[0], m1[1] - m0[1]); }
       draw();
     });
     const up = e => { pts.delete(e.pointerId); pd = 0; }; el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
