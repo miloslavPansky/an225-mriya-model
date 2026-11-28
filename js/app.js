@@ -5,9 +5,9 @@
   const M = window.AN225;
   const GDEF = [
     ['sp', 'Páteř', 0x7A5A32], ['rb', 'Trup – žebra', 0xD9B781], ['sw', 'Nosník – stojiny', 0x8A6438], ['wg', 'Křídla – žebra', 0xC29A60],
-    ['en', 'Gondoly + pylony', 0x8E8A84], ['tl', 'Ocasní plochy', 0xA8784A], ['gr', 'Podvozek', 0x55524D], ['rf', 'Pásnice + výztuhy', 0x1D9E75], ['jn', 'Spoje', 0xE24B4A]];
+    ['en', 'Gondoly + pylony', 0x8E8A84], ['tl', 'Ocasní plochy', 0xA8784A], ['gr', 'Podvozek', 0x55524D], ['rf', 'Pásnice + výztuhy', 0x1D9E75]];
   const hex = c => '#' + c.toString(16).padStart(6, '0');
-  const DEF = { L: 80, P: 15, CW: 20, T: 3, S: '2,2', B: '1000,650', SM: 'groups', UL: 1 };
+  const DEF = { L: 80, P: 15, CW: 16, T: 3, S: '2,2', B: '1000,650', SM: 'groups', UL: 1 };
   const STRK = ['S', 'B', 'SM'];
   const state = Object.assign({}, DEF);
   const vis = {}; GDEF.forEach(g => vis[g[0]] = true);
@@ -50,10 +50,8 @@
     if (L > ST.bed[0] - 20 || S > ST.bed[1] - 20) ST.over += n;
     if (L > ST.mx[0]) ST.mx = [L, S, name];
   }
-  function addJoint(p, s, kind) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), MAT.jn), q = Math.max(6, 4 * Tm) * (s || 1);
-    m.scale.set(q, q, q); m.position.set((p[0] - 42) * K, p[2] * K, p[1] * K); m.userData = { g: 'jn', name: '', kind: kind || '' }; GR.jn.add(m);
-  }
+  function addJoint() {} // spoje se nevykreslují – díly se vejdou na stůl frézy, nenapojují se (jen laminují)
+
 
   function saveHash() { history.replaceState(null, '', '#' + Object.entries(state).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&')); }
   function build() {
@@ -67,7 +65,7 @@
     ST = { n: 0, area: 0, over: 0, mx: [0, 0, ''], bed };
     GEO = M.buildModel({ L: state.L, P: state.P, T: state.T, CW: state.CW, nS, nW, bed }, { part: addPart, joint: addJoint, count });
     const k = K;
-    GDEF.forEach(g => $('c_' + g[0]).textContent = g[0] === 'jn' ? GR.jn.children.length : (ST[g[0]] || 0));
+    GDEF.forEach(g => $('c_' + g[0]).textContent = ST[g[0]] || 0);
     $('sS').textContent = '1 : ' + Math.round(84000 / (state.L * 10));
     $('sD').textContent = Math.round(84 * k / 10) + ' × ' + Math.round(88.4 * k / 10) + ' × ' + Math.round(18.1 * k / 10) + ' cm';
     $('sN').textContent = ST.n + ' dílů · ~' + Math.ceil(ST.area / ((bed[0] - 20) * (bed[1] - 20) * 0.65)) + ' desek';
@@ -116,7 +114,7 @@
     photo: () => { setVis(); view(-0.45, -0.22, 1.55); }, iso: () => { setVis(); view(-0.7, 0.4, 1.9); },
     side: () => { setVis(); view(0, 0.01, 1.9); }, top: () => { setVis(); view(0, 1.55, 2.0); }, front: () => { setVis(); view(-Math.PI / 2, 0.05, 1.9); },
     tail: () => { setVis(); view(-1.0, 0.35, 0.55, [78, 0, 11]); },
-    root: () => { setVis(['sp', 'sw', 'wg', 'rf', 'jn', 'en']); view(-0.35, 0.55, 0.5, [31, 6, 8.5]); },
+    root: () => { setVis(['sp', 'sw', 'wg', 'rf', 'en']); view(-0.35, 0.55, 0.5, [31, 6, 8.5]); },
     spar: () => { setVis(['sp', 'sw', 'rf']); view(-0.5, 0.5, 1.2, [38, 0, 8]); },
     tip: () => { setVis(); view(-0.55, 0.6, 0.16, [49, 41.5, 7.0]); },
     eng: () => { setVis(); view(-1.0, -0.25, 0.3, [38.5, 25.5, 6.0]); },
@@ -133,10 +131,7 @@
       const ud = o.userData; if (!o.isMesh || !ud || !ud.g) return;
       if (!STR) { o.material = MAT[ud.g]; return; }
       const pos = o.geometry.attributes.position, n = pos.count, col = new Float32Array(n * 3);
-      if (ud.g === 'jn') {
-        const u = STR.field('jn', '', [o.position.x / K + 42, o.position.z / K, o.position.y / K], ud.kind), c = u == null ? GRAY : SA.color(u);
-        for (let i = 0; i < n; i++) col.set(c, i * 3);
-      } else for (let i = 0; i < n; i++) {
+      for (let i = 0; i < n; i++) {
         const u = STR.field(ud.g, ud.name, [pos.getX(i) / K + 42, pos.getZ(i) / K, pos.getY(i) / K]);
         col.set(u == null ? GRAY : SA.color(u), i * 3);
       }

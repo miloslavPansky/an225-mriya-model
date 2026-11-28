@@ -21,8 +21,9 @@ Parametrický model An-225 v konstrukci „rybí kostra“ pro výrobu z 3mm **b
 
 ## Konstrukční pravidla (dodržovat)
 - Pouze hřebenové spoje (zářez od hrany), žádné vnitřní výřezy, pokud to není nezbytné.
+- 2D fréza: každý díl je plochá deska plné tloušťky; pásy (pásnice, lišty, podélníky) tvarově jednoduché, tvar nesou žebra (lože/zářezy jsou v žebrech). Díly se vejdou na stůl → nenapojují se (jen laminují), spoje se ve 3D nezobrazují.
 - Páteř 2 vrstvy (bez příložek), s centroplánem křídla se kříží hřebenem; trup s bočními podélníky.
-- Křídlo: průběžný I-nosník, stojiny bez zářezů; centroplán (kořenová žebra ±aK) s kýlem pod dolní pásnicí uvnitř trupu; pásnice 1 vrstva, 1 díl, zužující se ke konci, **zapuštěné do loží žeber se zářezy pro žebra** (líc = obrys profilu); pomocná lišta v 65 % se zářezy; konec uzavřen koncovým žebrem. Žádné další vrstvy pásnic ani příložky. Min. tloušťka profilu 12 mm, odtoková hrana ≥ 3 mm.
+- Křídlo: průběžný I-nosník, stojiny bez zářezů; centroplán (kořenová žebra ±aK) s kýlem pod dolní pásnicí uvnitř trupu; pásnice 1 vrstva, 1 díl, jednoduchý lichoběžníkový pás bez zářezů (16 → 10 mm), **zapuštěné do loží žeber** (líc = obrys profilu); pomocná lišta rovný pás bez zářezů v ložích zadních půlžeber; konec uzavřen koncovým žebrem. Žádné další vrstvy pásnic ani příložky. Min. tloušťka profilu 12 mm, odtoková hrana ≥ 3 mm.
 - Pravidelné žebrování křídel; pylon vždy mezi dvě žebra, nasazený zespodu výřezem na nosník (lepit), náběžná hrana pylonu plynule do křídla.
 - Výškovka 2 vrstvy, kýlovky 2 (+ 2 výztuhy), podvozek 2 (pásy zasazené do žeber), prstence gondol 1 vrstva v rozestupu žeber, spoj s gondolou 50/50.
 - Žádný díl nesmí přesáhnout pracovní plochu frézy − 20 mm; nejužší místo dílu ≥ 5 mm (obojí hlídá test).

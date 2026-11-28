@@ -58,19 +58,18 @@
           return null;
         case 'tailS':
           if (grp === 'tl' && name === 'Výškovka') return stabS(y).u;
+          if (grp === 'tl' && name === 'Výztuha kýlovky') return finJ().u;   // spoj kýlovka–výškovka
           if (grp === 'tl') return finS(P[2]).u;
-          if (grp === 'jn' && kind === 'fin') return finJ().u;
           return null;
         case 'eng': {
           if (grp === 'en' && name === 'Gondola + pylon') return pyl(nearPylon(y)).root.u;
           if (grp === 'en') return 0.05;
-          if ((grp === 'jn' && kind === 'pylon') || (grp === 'rf' && name === 'Výplň pylonu')) return pyl(nearPylon(y)).joint.u;
+          if (grp === 'rf' && name === 'Výplň pylonu') return pyl(nearPylon(y)).joint.u;
           return null;
         }
         case 'gear':
           if (grp === 'gr' && name === 'Příčník podvozku') return gearC().u;
           if (grp === 'gr') return 0.05;
-          if (grp === 'jn' && (kind === 'gear' || kind === 'gearX')) return gearC().u;
           if (grp === 'rb' && g.ribsCarry && P[0] > 33 && P[0] < 50) return 0.05;
           return null;
       }

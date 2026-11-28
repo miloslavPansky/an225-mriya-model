@@ -157,14 +157,14 @@ function clipX(P, xc, less) {
   b += poly(f, S, C.fl, 0.45, 0.8);
   const vs = S.map(p => p[1]), us = S.map(p => p[0]);
   const nd = P.CW / 2 - Math.min(...vs.filter(v => v > 0));
-  b += vdim(f, Math.min(...vs), Math.max(...vs), Math.max(...us), `${P.CW}`, 14);
+  b += vdim(f, Math.min(...vs), Math.max(...vs), Math.max(...us), null, 14);
   const nIn = S.filter(p => near(p[1], P.CW / 2 - nd, 1e-3));
   if (nIn.length >= 2) {
     const ux = nIn.map(p => p[0]).sort((a, b) => a - b);
     b += hdim(f, ux[0], ux[ux.length - 1], P.CW / 2 - nd, `${n1(ux[ux.length - 1] - ux[0])}`, -16);
     b += vdim(f, P.CW / 2 - nd, P.CW / 2, ux[0], `${n1(nd)}`, -20);
   }
-  b += txt(20, 182, `zářezy ${n1(nd)} mm z obou okrajů; čárkovaně žebro (šikmo – šíp)`);
+  b += txt(20, 182, 'Pás bez zářezů; čárkovaně žebro, které má pro pásnici lože 3 mm');
   // celá pásnice v půdorysu
   const all = parts.filter(q => q.name === 'Pásnice nosníku' && isUp(q));
   const PL = all.map(q => q.pts.map(([u, v]) => { const p = to3(q, u, v); return [p[1] * k, -p[0] * k]; }));
@@ -173,7 +173,7 @@ function clipX(P, xc, less) {
   for (const P2 of PL) b += poly(f3, P2, C.fl, 0.55, 0.3);
   const xs = PL.flat().map(p => p[0]), ys = PL.flat().map(p => p[1]);
   b += hdim(f3, Math.min(...xs), Math.max(...xs), Math.min(...ys), null, 14) + vdim(f3, Math.min(...ys), Math.max(...ys), Math.max(...xs), null, 8);
-  b += txt(380, 196, 'Ohyb 5,6° na obou kořenových žebrech');
+  b += txt(380, 182, `Šířka ${P.CW} mm u kořene → ${n1(G.cwA(G.aTip) * k)} mm u konce`) + txt(380, 198, 'Ohyb 5,6° na obou kořenových žebrech');
   // detail žebra u nosníku
   const a = RA[Math.round(nB * 0.45)], fr = ribAt('Půlžebro křídla přední', a), rr = ribAt('Půlžebro křídla zadní', a);
   const xs0 = sxAt(a) * k, FR = mm(fr).filter(p => p[0] > xs0 - 22), RR = mm(rr).filter(p => p[0] < xs0 + 22);
@@ -186,14 +186,13 @@ function clipX(P, xc, less) {
   const wx = (P.nW * T / 2 + 0.02 * k) / cosP;
   const zT = Math.max(...frC.map(p => p[1])), zB = Math.min(...frC.map(p => p[1]));
   b += poly(f4, [[xs0 - wx, zB + T], [xs0 + wx, zB + T], [xs0 + wx, zT - T + 0.0], [xs0 - wx, zT - T]], C.web, 0.4, 0.6);
-  const fwx = P.CW / 2 / cosP;
+  const fwx = G.cwA(a) * k / 2 / cosP;
   b += poly(f4, [[xs0 - fwx, zT - T], [xs0 + fwx, zT - T], [xs0 + fwx, zT], [xs0 - fwx, zT]], C.fl, 0.25, 0.6, true);
   b += poly(f4, [[xs0 - fwx, zB], [xs0 + fwx, zB], [xs0 + fwx, zB + T], [xs0 - fwx, zB + T]], C.fl, 0.25, 0.6, true);
   b += vdim(f4, zT - T, zT, xs0 - fwx - 4, '3', -10);
   b += callout(f4, [xs0, zT - T / 2], 470, 236, 'pásnice v loži, líc = obrys profilu');
-  b += callout(f4, [xs0 - fwx + 0.8, zT - 0.5], 160, 236, 'zub žebra v zářezu pásnice', 'end');
   b += callout(f4, [xs0, (zT + zB) / 2], 470, 425, 'stojina 2× 3 mm (řez)');
-  console.log('flange', sheet('3-pasnice-zebra', 'Pásnice zapuštěné do žeber se zářezy', 450, b));
+  console.log('flange', sheet('3-pasnice-zebra', 'Pásnice zapuštěné do loží žeber', 450, b));
 }
 
 // =========== 4 — pomocná lišta + zadní půlžebro
@@ -201,10 +200,10 @@ function clipX(P, xc, less) {
   const st = parts.filter(q => q.name === 'Pomocná lišta křídla' && q.O[1] > 12);
   const S = mm(st[2]);
   const f = frame([20, 40, 300, 80], [S], 6, false);
-  let b = txt(20, 24, 'Pomocná lišta (65 % hloubky, spodem) – úsek', 'start', 'th') + poly(f, S, C.fl, 0.45, 0.8);
+  let b = txt(20, 24, 'Pomocná lišta (spodem, za nosníkem) – úsek', 'start', 'th') + poly(f, S, C.fl, 0.45, 0.8);
   const vs = S.map(p => p[1]), us = S.map(p => p[0]);
   b += vdim(f, Math.min(...vs), Math.max(...vs), Math.max(...us), '12', 14);
-  b += txt(20, 140, 'Zářezy 3 mm z obou okrajů, jádro 6 mm');
+  b += txt(20, 140, 'Rovný pás 10 × 3 mm bez zářezů, jeden díl na křídlo');
   const a = RA[Math.round(nB * 0.45)], rr = ribAt('Půlžebro křídla zadní', a), fr = ribAt('Půlžebro křídla přední', a);
   const R = mm(rr), F = mm(fr);
   const f2 = frame([20, 180, 640, 150], [R, F], 6);
@@ -213,8 +212,8 @@ function clipX(P, xc, less) {
   const rx = R.map(p => p[0]), fx = F.map(p => p[0]), rz = R.map(p => p[1]), fz = F.map(p => p[1]);
   b += hdim(f2, Math.min(...fx), Math.max(...fx), Math.min(...fz), null, 26) + hdim(f2, Math.min(...rx), Math.max(...rx), Math.min(...fz), null, 26);
   b += vdim(f2, Math.min(...fz), Math.max(...fz), Math.min(...fx), null, -12);
-  const xL = (M.WING.le(a) + 0.65 * M.WING.c(a)) * k;
-  b += callout(f2, [xL, Math.min(...rz) + T + 0.5], 470, 370, 'lože lišty – zuby do zářezů lišty');
+  const xL = G.xLs(a) * k;
+  b += callout(f2, [xL, Math.min(...rz) + T + 0.5], 470, 370, 'lože lišty, hloubka 3 mm');
   b += callout(f2, [Math.max(...fx), Math.max(...fz) - 1.5], 260, 370, 'lože pásnice u stojiny', 'end');
   console.log('strip', sheet('4-lista-pulzebra', 'Pomocná lišta a půlžebra', 390, b));
 }
@@ -239,7 +238,7 @@ function clipX(P, xc, less) {
   const xs = G.sx(e) * k;
   b += callout(f, [xs, (M.WING.z(e)) * k - 4], 470, 268, 'výřez shora pro nosník – nasadit zespodu, lepit');
   b += callout(f, [(M.WING.le(e) - 1.2) * k, (M.WING.z(e) - 0.55) * k], 120, 60, 'náběžná hrana pylonu plynule do křídla', 'start');
-  const xL = (M.WING.le(e) + 0.65 * M.WING.c(e)) * k;
+  const xL = G.xLs(e) * k;
   b += callout(f, [xL, (M.WING.z(e) - 0.6) * k], 560, 60, 'lože pro lištu', 'end');
   // prstenec
   const r0 = rings[1], R = mm(r0);

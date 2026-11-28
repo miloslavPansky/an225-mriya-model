@@ -7,7 +7,7 @@ Parametrický 3D model letadla Antonov An-225 Mrija pro výrobu z 3mm březové 
 ![Jako foto](docs/img/01_jako_foto.jpg)
 <sub>Náhledy v `docs/img/` jsou ze stavu před úpravou geometrie podle výkresu.</sub>
 
-## Stav projektu (k 26. 11. 2026)
+## Stav projektu (k 28. 11. 2026)
 
 | Oblast | Stav |
 |---|---|
@@ -24,7 +24,7 @@ Parametrický 3D model letadla Antonov An-225 Mrija pro výrobu z 3mm březové 
 | Parametr | Skutečnost | Model (délka 80 cm, 1:105) |
 |---|---|---|
 | Délka | 84,0 m | 800 mm |
-| Rozpětí | 88,4 m | 837 mm (koncové žebro 4 mm před zaobleným koncem) |
+| Rozpětí | 88,4 m | 839 mm (koncové žebro 3 mm před zaobleným koncem) |
 | Výška (SOP) | 18,1 m | 172 mm |
 | Šířka trupu (max., vč. krytů podvozku) | 7,4 m [výkres] | 71 mm |
 | Výška trupu | ~8,5 m [výkres] | ~81 mm |
@@ -48,15 +48,15 @@ Všechny rozměry letadla jsou v `js/an225-ref.js` se značkou původu (oficiál
 - Tvar žeber z řezů 1-1 … 9-9 výkresu (normalizovaný tvar, mezi řezy plynulé prolnutí), výška z bokorysu, šířka z půdorysu.
 - **Boční podélníky** (K5): vodorovné pásy 10 mm ve výšce 3,8 m (skut.), od přídě po ~66 m, zasunuté do bočních zářezů žeber → každé žebro drženo ve 3 bodech.
 
-### Křídlo – průběžný I-nosník, rybí kost i na pásnicích (stav 26. 11.)
-Výkresy dílů: [`docs/parts/`](docs/parts/) (generuje `node tools/parts/sheets.mjs`).
+### Křídlo – průběžný I-nosník, rybí kost (stav 28. 11.)
+Výkresy dílů: [`docs/parts/`](docs/parts/) (generuje `node tools/parts/sheets.mjs`). Každý díl je plochá deska plné tloušťky (2D fréza); tvarově složité jsou jen žebra, pásy jsou jednoduché – stejně jako podélníky trupu.
 - **Centroplán** mezi kořenovými žebry (±3,9 m skut., 74 mm): nosník je přímý a příčný, bez vzepětí. **Stojina centroplánu** 2 vrstvy mezi pásnicemi + **kýl centroplánu** 2 vrstvy pod dolní pásnicí uvnitř trupu (lepený na pásnici, 8 mm od obrysu trupu, nad bočními podélníky). Výška nosníku v trupu 52 mm proti 21 mm profilu (2,5×). Žebro trupu v místě centroplánu vypuštěno.
-- **Pásnice** horní a dolní: každá **jeden díl, 1 vrstva** přes celé rozpětí (857 × 212 mm). Šířka 20 mm u kořene, ke konci se zužuje na 70 % (14 mm). **Zapuštěné do žeber**: žebro má v místě pásnice lože hloubky 3 mm, takže líc pásnice = obrys profilu (jako pod potah). **Zářezy pro žebra** 3 mm z obou okrajů (šikmé – nosník má šíp 26°): žebro prochází zářezem plným „zubem“, takže je vidět i přes pásnici a je přesně ustavené. Ohyb 5,6° na každém kořenovém žebru (dříve 2 × 5,6° v ose).
+- **Pásnice** horní a dolní: každá **jeden díl, 1 vrstva**, jednoduchý pás **bez zářezů** (855 × 207 mm): 16 mm u kořene, lichoběžníkově zúžená na 10 mm u konce. **Zapuštěné do loží žeber** (lože 3 mm, líc pásnice = obrys profilu), mezi pásnicí a stojinou zbývá v každém půlžebru lože 5 → 2 mm. Ohyb 5,6° na každém kořenovém žebru.
 - **Stojiny** vnějších křídel: 2 vrstvy, **bez zářezů**, od kořenového ke koncovému žebru, přímý nosník 37 % (kořen) → 42 % hloubky (konec).
-- **Žebra**: kořenové a koncové celé, mezi nimi pravidelně 24 polí po 15,2 mm – **přední + zadní půlžebro** lepené na stojinu, s loži pro pásnice (a lištu).
-- **Konec křídla uzavřen koncovým žebrem**: stojiny končí na jeho vnitřní ploše, pásnice v líci jeho vnější plochy (poslední zářez je „poloviční“). Poloha koncového žebra = co nejdál, aby pásnice nepřečnívala náběžnou hranu (43,8 m).
-- **Pomocná lišta** 12 × 3 mm v 65 % hloubky zespodu, se zářezy 3 mm pro žebra (jádro 6 mm), zapuštěná do loží žeber. Končí na žebru ve 24,6 m – dál by se nevešla za dolní pásnici.
-- Zrušeno: 2. vrstva pásnic ±6 m (spojka K2) a příložky páteře.
+- **Žebra**: kořenové a koncové celé, mezi nimi pravidelně 25 polí po 15,2 mm – **přední + zadní půlžebro** lepené na stojinu, s loži pro pásnice a lištu.
+- **Konec křídla uzavřen koncovým žebrem** (43,9 m): stojiny končí na jeho vnitřní ploše, pásnice rovně v líci jeho vnější plochy.
+- **Pomocná lišta**: rovný pás 10 × 3 mm bez zářezů, zespodu za nosníkem – od 65 % hloubky kořenového žebra k 65 % hloubky žebra ve 29,5 m (dál by se nevešla mezi pásnici a odtokovou hranu), zapuštěná do loží zadních půlžeber.
+- Zrušeno: 2. vrstva pásnic ±6 m (spojka K2), příložky páteře, zářezy v pásnicích a liště.
 - Profil podle řezů výkresu (max. tloušťka ve 40 %), relativní tloušťka 12 % → 10 %; **min. tloušťka profilu 12 mm**, **odtoková hrana tupá ≥ 3 mm** (G6).
 
 ### Gondoly
@@ -86,9 +86,9 @@ křídlo 30 N na konec, ocas 25 N svisle na každou kýlovku, kýlovka 20 N boč
 
 | Místo (využití = napětí / dovolené) | Původní návrh | Po úpravách |
 |---|---|---|
-| Křídlo – nejslabší průřez nosníku (~20 cm od osy) | 704 % (stojina se zářezy) | 73 % |
-| Křídlo – u boku trupu / v ose | – | 40 % / 11 % (kýl centroplánu) |
-| Lepení jazýčku vnějšího pylonu | 737 % | 89 % |
+| Křídlo – nejslabší průřez nosníku (~20 cm od osy) | 704 % (stojina se zářezy) | 63 % |
+| Křídlo – u boku trupu / v ose | – | 36 % / 11 % (kýl centroplánu) |
+| Lepení jazýčku vnějšího pylonu | 737 % | 76 % |
 | Spoj kýlovka–výškovka | 274 % | 80 % |
 | Příčník podvozku | 98 % | ~0 % (nesou žebra) |
 | Výškovka u trupu | 72 % | 14 % |
@@ -107,6 +107,7 @@ křídlo 30 N na konec, ocas 25 N svisle na každou kýlovku, kýlovka 20 N boč
 10. Stojina se zářezy pro celá žebra za vnitřním motorem → **průběžný I-nosník bez zářezů, všechna žebra jako půlžebra** (K1–K3).
 11. Výškovka 1 vrstva → **2 vrstvy** (K6).
 13. Křídlo (26. 11.): spojka pásnic a příložky páteře → **kýl centroplánu** (vyšší nosník v trupu); pásnice na žebrech → **zapuštěné se zářezy**; otevřený konec → **koncové žebro**; pásnice zúžená ke konci; lišta se zářezy; pylon nasazovaný zespodu s plynulou náběžnou hranou; prstence 1 vrstva v rozestupu žeber se spojem 50/50.
+14. Křídlo (28. 11.): pásnice a lišta se zářezy → **jednoduché pásy bez zářezů** v ložích žeber (jako podélníky trupu), pásnice 16 → 10 mm, lišta rovná; ve 3D se nezobrazují spoje (díly se nenapojují, jen laminují).
 12. Zvažováno a zamítnuto (mění vzhled rybí kosti nebo není potřeba): plné vrstvené křídlo, plný konec křídla, vrstvená gondola, pojízdný podvozek, rozestup žeber 18 mm, předepsaný směr vlákna a křížení vrstev (M2, M3), bezpečnostní úpravy hračky (B1–B3).
 
 ## Otevřené body
