@@ -46,6 +46,8 @@ Všechny rozměry letadla jsou v `js/an225-ref.js` se značkou původu (oficiál
 
 ### Trup
 - Tvar žeber z řezů 1-1 … 9-9 výkresu (normalizovaný tvar, mezi řezy plynulé prolnutí), výška z bokorysu, šířka z půdorysu.
+- **Hladký obrys žeber** (29. 11.): řezy vyhlazené ([1 2 1]/4, 2×, největší šířka zachována), nad nejširším místem bez dutého přechodu (horní obálka), mezi body kubická interpolace (64 bodů na stranu). Řez 5-5 (za křídlem) má vypouklý eliptický vršek místo úzkého hřbetu s dutým přechodem [E].
+- **Žebra i v místě kořene křídla** v pravidelném rozestupu (dříve 3 vynechaná): žebro, které kříží hluboké stojiny, má zářez shora – u osy tvaru U (ramena vně stojin, dno pod spodní spojkou), u boku trupu zářez z horního rohu. Nosník se do zářezů vkládá shora.
 - **Boční podélníky** (K5): vodorovné pásy 10 mm ve výšce 3,8 m (skut.), od přídě po ~66 m, zasunuté do bočních zářezů žeber → každé žebro drženo ve 3 bodech.
 
 ### Křídlo – nosník Λ, rybí kost (stav 28. 11.)
@@ -57,12 +59,12 @@ Výkresy dílů: [`docs/parts/`](docs/parts/) (generuje `node tools/parts/sheets
 - **Dolní pásnice** – 2 díly, každý od kořenového žebra ke konci, bez ohybu (uvnitř trupu by musela proříznout hlubokou stojinu, nahrazuje ji tam stojina + spodní spojka).
 - **Pásnice** 1 vrstva, šířka 20 mm u kořene → 12 mm u konce. Vyrábí se jako plochý díl a při montáži se jen mírně prohne do loží žeber (ohyb kolem osy kolmé na délku pásu), líc = obrys profilu. Přilepené po celé délce na hranu stojiny (smyk v lepeném spoji ~0,3 MPa). **Výřezy 3 mm hluboké z obou okrajů u každého žebra, boky rovnoběžné s rovinou žebra** (žebro kříží pásnici šikmo pod úhlem šípu 26°), šířka = tloušťka žebra + 0,1 mm; žebro jimi prochází v plné výšce. Plné jádro pásnice 14 → 6 mm.
 - **Žebra**: pravidelně 25 polí po 15,2 mm, všechna (i kořenové) jako **přední + zadní půlžebro** lepené na stojinu, s loží pro jádro pásnic a pro lištu. **Konec křídla uzavírá celé koncové žebro** (43,8 m) s plným profilem – stojina i pásnice končí na jeho vnitřní ploše.
-- **Pomocná lišta**: rovný pás 10 × 3 mm bez výřezů, 1 díl na křídlo, zespodu za nosníkem, od 65 % hloubky kořenového žebra do 27,9 m, zapuštěná do loží zadních půlžeber.
+- **Pomocná lišta**: rovný pás 12 × 3 mm, 1 díl na křídlo, zespodu za nosníkem, od vnější plochy kořenového žebra (65 % hloubky) po vnitřní plochu žebra ve 27,9 m. **Výřezy pro žebra jako u pásnic** (3 mm z obou okrajů, boky rovnoběžné s rovinou žebra), jádro 6 mm leží v ložích zadních půlžeber.
 - Zrušeno: centroplán s kýlem (26. 11.), 2. vrstva pásnic ±6 m (K2), příložky páteře.
 - Profil podle řezů výkresu (max. tloušťka ve 40 %), relativní tloušťka 12 % → 10 %; **min. tloušťka profilu 12 mm**, **odtoková hrana tupá ≥ 3 mm** (G6).
 
 ### Gondoly
-- **Gondola + pylon** 2 vrstvy, motor vždy přesně mezi dvěma žebry. Pylon se **nasazuje zespodu**: horní okraj má výřez pro nosník (dosedá na dolní pásnici) a dva jazýčky na celou výšku profilu před a za nosníkem, mezera k žebrům vyplněna výplněmi. **Spoj se musí slepit** (tření nestačí). Zadní jazýček má lože pro pomocnou lištu.
+- **Gondola + pylon** 2 vrstvy, motor vždy přesně mezi dvěma žebry. Pylon se **nasazuje zespodu**: horní okraj má výřez pro nosník (dosedá na dolní pásnici) a dva jazýčky na celou výšku profilu před a za nosníkem, mezera k žebrům vyplněna výplněmi (nutné – nesou boční ohyb pylonu, viz historie 17). **Spoj se musí slepit** (tření nestačí). Zadní jazýček má lože pro pomocnou lištu.
 - **Náběžná hrana pylonu** plynule přechází z horní strany gondoly do náběžné hrany křídla (dříve ostrý roh 1 m před náběžnou hranou).
 - **Prstence 1 vrstva**, 5 na gondolu v rozestupu žeber (15,2 mm). **Spoj 50/50**: prstenec má výřez shora do osy, gondola výřez zdola do osy.
 
@@ -112,13 +114,14 @@ křídlo 30 N na konec, ocas 25 N svisle na každou kýlovku, kýlovka 20 N boč
 14. Křídlo (28. 11.): pásnice a lišta se zářezy → **jednoduché pásy bez zářezů** v ložích žeber (jako podélníky trupu), pásnice 16 → 10 mm, lišta rovná; ve 3D se nezobrazují spoje (díly se nenapojují, jen laminují).
 15. Kořen (28. 11.): centroplán s příčnou stojinou a stojiny vnějších křídel na tupo pod úhlem 26° → **stojina každého křídla 1 díl od osy, Λ v ose, průběžná horní pásnice, spodní spojka**; pásnice znovu s výřezy pro žebra, nyní obdélníkovými 5 × 3 mm.
 16. Pásnice (28. 11.): pásy zobrazené po polích a obdélníkové výřezy → **každý pás jeden díl i ve 3D**, výřezy šikmé rovnoběžně s žebry, horní pásnice bez výřezu ve špičce Λ, **čepy stojin** v otvorech horní pásnice; ve 3D jen skutečné obrysy dílů (žádné čáry uvnitř dílu).
+17. Lišta a trup (29. 11.): lišta s výřezy pro žebra (12 mm, jádro 6 mm); žebra trupu hladká a nad nejširším místem vypouklá, doplněná žebra v kořeni křídla se zářezem shora pro stojiny. Výplně pylonů ponechány: pylon se dotýká jen dolní pásnice (stojina je užší a pylon se nasazuje zespodu), bez výplní by lepený spoj nesl boční ohyb jen na ploše ~18 × 6 mm (namáhání ~10× víc než dovolené).
 12. Zvažováno a zamítnuto (mění vzhled rybí kosti nebo není potřeba): plné vrstvené křídlo, plný konec křídla, vrstvená gondola, pojízdný podvozek, rozestup žeber 18 mm, předepsaný směr vlákna a křížení vrstev (M2, M3), bezpečnostní úpravy hračky (B1–B3).
 
 ## Otevřené body
 - [ ] Naměřená tloušťka březové překližky (šířka zářezů).
 - [ ] Ohyb horní pásnice 5,6° na kořenových žebrech – ověřit na zkušebním kusu.
 - [ ] Zářez páteře pro Λ stojin a spodní spojku – rozměry vyřeší generátor DXF.
-- [ ] Detaily trupu, ocasu a podvozku (další kroky ladění).
+- [ ] Detaily ocasu a podvozku (další kroky ladění).
 - [ ] Odhady v `js/an225-ref.js` označené [E] (rozchod podvozku, sklon kýlovek, délka gondol, tloušťka profilu u konce).
 - [ ] Generátor DXF: díly s číslováním, zářezy z průniků dílů, dog-bone, rozmístění na desky 1000 × 650 mm, šablona ohybu pásnice.
 - [ ] Návod ke stavbě (pořadí lepení).
@@ -136,7 +139,7 @@ tools/digitize/              skripty pro odečet z výkresu (Python + Pillow)
 tools/parts/sheets.mjs       výkresové listy upravených dílů → docs/parts/*.svg
 .github/workflows/pages.yml  CI: test → build → deploy na GitHub Pages
 docs/img/                    náhledy (stav před úpravou podle výkresu)
-docs/parts/                  výkresy dílů křídla a gondol (SVG)
+docs/parts/                  výkresy dílů křídla, gondol a žeber trupu (SVG)
 CLAUDE.md                    kontext pro Claude Code
 ```
 

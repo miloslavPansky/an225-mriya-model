@@ -197,24 +197,30 @@ function clipX(P, xc, less) {
 // =========== 4 — pomocná lišta + zadní půlžebro
 {
   const st = parts.find(q => q.name === 'Pomocná lišta křídla' && to3(q, 0, 0)[1] > 0);
-  const S = mm(st);
-  const f = frame([20, 40, 300, 80], [S], 6, false);
-  let b = txt(20, 24, 'Pomocná lišta (spodem, za nosníkem) – 1 díl na křídlo', 'start', 'th') + poly(f, S, C.fl, 0.45, 0.8);
-  const vs = S.map(p => p[1]), us = S.map(p => p[0]);
-  b += vdim(f, Math.min(...vs), Math.max(...vs), Math.max(...us), null, 14);
-  b += txt(20, 140, 'Rovný pás 10 × 3 mm bez zářezů, jeden díl na křídlo');
+  const S = mm(st), us = S.map(p => p[0]), vs = S.map(p => p[1]), L = Math.max(...us) - Math.min(...us);
+  const f = frame([20, 40, 640, 40], [S], 4, false);
+  let b = txt(20, 24, 'Pomocná lišta (spodem, za nosníkem) – 1 díl na křídlo, plochý obrys', 'start', 'th') + poly(f, S, C.fl, 0.45, 0.6);
+  b += hdim(f, Math.min(...us), Math.max(...us), Math.max(...vs), null, 12);
+  // detail kolem jednoho výřezu
+  const ux = S.filter(p => p[1] < 0 && p[1] > -Math.max(...vs) + 0.5).map(p => p[0]).sort((a, c) => a - c), iu = 2 * Math.floor(ux.length / 4), cu = (ux[iu] + ux[iu + 1]) / 2 + 3, win = 16;
+  const sw = Q => Q.map(([x, y]) => [y, x]);
+  const D = clipX(clipX(S, cu - win, false), cu + win, true);
+  const fD = frame([420, 112, 200, 52], [D], 2, false);
+  b += txt(420, 106, 'Detail výřezů (boky rovnoběžné s žebrem)', 'start', 'ts') + poly(fD, D, C.fl, 0.45, 0.8);
+  b += vdim(fD, Math.min(...vs), Math.max(...vs), cu + win, null, 12);
+  b += txt(20, 118, `Rovný pás ${n1(Math.max(...vs) * 2)} × 3 mm, délka ${n1(L)} mm;`) + txt(20, 134, 'výřezy 3 mm z obou okrajů u každého žebra,') + txt(20, 150, `jádro ${n1(Math.max(...vs) * 2 - 2 * 3)} mm leží v loži půlžebra`);
   const a = RA[Math.round(nB * 0.45)], rr = ribAt('Půlžebro křídla zadní', a), fr = ribAt('Půlžebro křídla přední', a);
   const R = mm(rr), F = mm(fr);
-  const f2 = frame([20, 180, 640, 150], [R, F], 6);
-  b += txt(20, 166, 'Přední a zadní půlžebro (stejné pole), lože pásnic a lišty', 'start', 'th');
+  const f2 = frame([20, 190, 640, 150], [R, F], 6);
+  b += txt(20, 180, 'Přední a zadní půlžebro (stejné pole), lože pásnic a lišty', 'start', 'th');
   b += poly(f2, F, C.rib, 0.35, 0.8) + poly(f2, R, C.rib, 0.35, 0.8);
   const rx = R.map(p => p[0]), fx = F.map(p => p[0]), rz = R.map(p => p[1]), fz = F.map(p => p[1]);
   b += hdim(f2, Math.min(...fx), Math.max(...fx), Math.min(...fz), null, 26) + hdim(f2, Math.min(...rx), Math.max(...rx), Math.min(...fz), null, 26);
   b += vdim(f2, Math.min(...fz), Math.max(...fz), Math.min(...fx), null, -12);
   const xL = G.xLs(a) * k;
-  b += callout(f2, [xL, Math.min(...rz) + T + 0.5], 470, 370, 'lože lišty, hloubka 3 mm');
-  b += callout(f2, [Math.max(...fx), Math.max(...fz) - 1.5], 260, 370, 'lože pásnice u stojiny', 'end');
-  console.log('strip', sheet('4-lista-pulzebra', 'Pomocná lišta a půlžebra', 390, b));
+  b += callout(f2, [xL, Math.min(...rz) + T + 0.5], 470, 385, 'lože lišty (jádro), hloubka 3 mm');
+  b += callout(f2, [Math.max(...fx), Math.max(...fz) - 1.5], 260, 385, 'lože pásnice u stojiny', 'end');
+  console.log('strip', sheet('4-lista-pulzebra', 'Pomocná lišta a půlžebra', 400, b));
 }
 
 // =========== 5 — gondola, pylon, prstence
@@ -250,4 +256,23 @@ function clipX(P, xc, less) {
   b += txt(260, 380, 'Spoj 50/50: prstenec dolní polovinou do gondoly,');
   b += txt(260, 396, 'gondola horní polovinou do prstence.');
   console.log('eng', sheet('5-gondola-prstence', 'Gondola, pylon a prstence', 460, b));
+}
+
+// =========== 6 — žebra trupu u kořene křídla a za ním
+{
+  const fr = parts.filter(q => q.name === 'Žebro trupu').sort((a, c) => a.O[0] - c.O[0]);
+  const pick = X => fr.reduce((b, q) => Math.abs(q.O[0] - X) < Math.abs(b.O[0] - X) ? q : b);
+  const sel = [pick(G.sxC - 1.1), pick(G.sxC + 0.45), pick(G.sx(G.aK) + 0.1), pick(42)];
+  const lab = ['před kořenem (doplněné)', 'U – obejme stojiny', 'zářez z horního rohu', 'za křídlem – vypouklý vršek'];
+  let b = txt(20, 24, 'Žebra trupu v místě kořene křídla a za ním (pohled zepředu)', 'start', 'th');
+  const all = sel.map(mm), f = frame([20, 40, 640, 220], all.map((P, i) => P.map(([y, z]) => [y + i * 90, z])), 6);
+  sel.forEach((q, i) => {
+    const P = all[i].map(([y, z]) => [y + i * 90, z]);
+    b += poly(f, P, C.rib, 0.4, 0.8);
+    const [cx] = f([i * 90, 0]);
+    b += txt(cx, 282, `x = ${Math.round(q.O[0] * k)} mm`, 'middle') + txt(cx, 298, lab[i], 'middle');
+  });
+  b += txt(20, 330, 'Obrys žeber hladký (kubická interpolace vyhlazených řezů výkresu), nad nejširším místem bez dutého přechodu.');
+  b += txt(20, 346, 'Žebra v kořeni mají zářez shora pro hluboké stojiny a spodní spojku – nosník se do nich vkládá shora.');
+  console.log('fus', sheet('6-zebra-trupu', 'Žebra trupu u kořene křídla', 360, b));
 }
