@@ -52,12 +52,12 @@ Všechny rozměry letadla jsou v `js/an225-ref.js` se značkou původu (oficiál
 Výkresy dílů: [`docs/parts/`](docs/parts/) (generuje `node tools/parts/sheets.mjs`). Každý díl je plochá deska plné tloušťky (2D fréza).
 - **Stojina** každého křídla je **jeden díl ve 2 vrstvách od osy trupu po koncové žebro**, bez zářezů, ve svislé rovině podél přímé šípové osy (35 % hloubky v ose → 42 % u konce, šíp 26°). Vzepětí 5,6° je jen lom obrysu desky na kořenovém žebru (uvnitř trupu je křídlo bez vzepětí). Uvnitř trupu je stojina **hluboká** (54 mm, 8 mm od obrysu trupu, nad bočními podélníky). Na kořenovém žebru tak není žádný spoj na tupo.
 - **V ose** se obě stojiny potkají ve tvaru **Λ** v zářezu páteře a drží je:
-  - **horní pásnice** – jeden díl Λ přes celé rozpětí (838 × 230 mm), ohyb 5,6° na obou kořenových žebrech; nese tah při tlaku na konce křídel dolů,
+  - **horní pásnice** – jeden plochý díl Λ přes celé rozpětí (836 mm), bez výřezu ve špičce, ohyb 5,6° na obou kořenových žebrech (osa ohybu ⊥ nosník); nese tah při tlaku na konce křídel dolů. Ve střední části má 4 otvory, do kterých zapadnou **čepy stojin** (2 na stojinu, 8 mm, výška = tloušťka pásnice) – spoj stojina–pásnice v kořeni drží tvarově, ne jen lepidlem,
   - **spodní spojka** – pás 10 × 3 mm ve tvaru Λ přilepený zespodu na ploché spodní hrany hlubokých stojin; nese tah při zvedání konců křídel.
 - **Dolní pásnice** – 2 díly, každý od kořenového žebra ke konci, bez ohybu (uvnitř trupu by musela proříznout hlubokou stojinu, nahrazuje ji tam stojina + spodní spojka).
-- **Pásnice** 1 vrstva, šířka 20 mm u kořene → 12 mm u konce. Přilepené po celé délce na hranu stojiny (smyk v lepeném spoji ~0,3 MPa) a **zapuštěné do loží žeber** (líc = obrys profilu). **Obdélníkové výřezy 5 × 3 mm z obou okrajů** u každého žebra: žebro jimi prochází v plné výšce a zapadne do nich (šířka 5 mm pokrývá šikmé křížení o 26°). Plné jádro pásnice 14 → 6 mm.
+- **Pásnice** 1 vrstva, šířka 20 mm u kořene → 12 mm u konce. Vyrábí se jako plochý díl a při montáži se jen mírně prohne do loží žeber (ohyb kolem osy kolmé na délku pásu), líc = obrys profilu. Přilepené po celé délce na hranu stojiny (smyk v lepeném spoji ~0,3 MPa). **Výřezy 3 mm hluboké z obou okrajů u každého žebra, boky rovnoběžné s rovinou žebra** (žebro kříží pásnici šikmo pod úhlem šípu 26°), šířka = tloušťka žebra + 0,1 mm; žebro jimi prochází v plné výšce. Plné jádro pásnice 14 → 6 mm.
 - **Žebra**: pravidelně 25 polí po 15,2 mm, všechna (i kořenové) jako **přední + zadní půlžebro** lepené na stojinu, s loží pro jádro pásnic a pro lištu. **Konec křídla uzavírá celé koncové žebro** (43,8 m) s plným profilem – stojina i pásnice končí na jeho vnitřní ploše.
-- **Pomocná lišta**: rovný pás 10 × 3 mm bez zářezů, zespodu za nosníkem, od 65 % hloubky kořenového žebra do 27,9 m, zapuštěná do loží zadních půlžeber.
+- **Pomocná lišta**: rovný pás 10 × 3 mm bez výřezů, 1 díl na křídlo, zespodu za nosníkem, od 65 % hloubky kořenového žebra do 27,9 m, zapuštěná do loží zadních půlžeber.
 - Zrušeno: centroplán s kýlem (26. 11.), 2. vrstva pásnic ±6 m (K2), příložky páteře.
 - Profil podle řezů výkresu (max. tloušťka ve 40 %), relativní tloušťka 12 % → 10 %; **min. tloušťka profilu 12 mm**, **odtoková hrana tupá ≥ 3 mm** (G6).
 
@@ -89,7 +89,7 @@ křídlo 30 N na konec, ocas 25 N svisle na každou kýlovku, kýlovka 20 N boč
 | Místo (využití = napětí / dovolené) | Původní návrh | Po úpravách |
 |---|---|---|
 | Křídlo – nejslabší průřez nosníku (~20 cm od osy, v místě výřezů) | 704 % (stojina se zářezy) | 78 % |
-| Křídlo – u boku trupu / v ose | – | 40 % / 9 % (hluboká stojina + spodní spojka) |
+| Křídlo – u boku trupu / v ose | – | 58 % / 9 % (hluboká stojina + spodní spojka) |
 | Lepení jazýčku vnějšího pylonu | 737 % | 85 % |
 | Spoj kýlovka–výškovka | 274 % | 80 % |
 | Příčník podvozku | 98 % | ~0 % (nesou žebra) |
@@ -111,6 +111,7 @@ křídlo 30 N na konec, ocas 25 N svisle na každou kýlovku, kýlovka 20 N boč
 13. Křídlo (26. 11.): spojka pásnic a příložky páteře → **kýl centroplánu** (vyšší nosník v trupu); pásnice na žebrech → **zapuštěné se zářezy**; otevřený konec → **koncové žebro**; pásnice zúžená ke konci; lišta se zářezy; pylon nasazovaný zespodu s plynulou náběžnou hranou; prstence 1 vrstva v rozestupu žeber se spojem 50/50.
 14. Křídlo (28. 11.): pásnice a lišta se zářezy → **jednoduché pásy bez zářezů** v ložích žeber (jako podélníky trupu), pásnice 16 → 10 mm, lišta rovná; ve 3D se nezobrazují spoje (díly se nenapojují, jen laminují).
 15. Kořen (28. 11.): centroplán s příčnou stojinou a stojiny vnějších křídel na tupo pod úhlem 26° → **stojina každého křídla 1 díl od osy, Λ v ose, průběžná horní pásnice, spodní spojka**; pásnice znovu s výřezy pro žebra, nyní obdélníkovými 5 × 3 mm.
+16. Pásnice (28. 11.): pásy zobrazené po polích a obdélníkové výřezy → **každý pás jeden díl i ve 3D**, výřezy šikmé rovnoběžně s žebry, horní pásnice bez výřezu ve špičce Λ, **čepy stojin** v otvorech horní pásnice; ve 3D jen skutečné obrysy dílů (žádné čáry uvnitř dílu).
 12. Zvažováno a zamítnuto (mění vzhled rybí kosti nebo není potřeba): plné vrstvené křídlo, plný konec křídla, vrstvená gondola, pojízdný podvozek, rozestup žeber 18 mm, předepsaný směr vlákna a křížení vrstev (M2, M3), bezpečnostní úpravy hračky (B1–B3).
 
 ## Otevřené body

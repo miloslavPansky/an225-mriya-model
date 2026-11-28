@@ -15,9 +15,9 @@ const outDir = process.argv.slice(2).find(a => !a.startsWith('--')) || new URL('
 // ---- model (výchozí nastavení)
 const P = { L: 80, P: 15, T: 3, CW: 20, nS: 2, nW: 2, bed: [1000, 650] };
 const parts = [];
-const G = M.buildModel(P, { part: (g, pts, O, U, V, o = {}) => parts.push({ g, name: o.name || '', pts, O, U, V }), joint() {}, count() {} });
+const G = M.buildModel(P, { part: (g, pts, O, U, V, o = {}) => parts.push({ g, name: o.name || '', pts, O, U, V, fold: o.fold, holes: o.holes || [] }), joint() {}, count() {} });
 const k = G.k, T = P.T;
-const to3 = (q, u, v) => q.O.map((o, i) => o + q.U[i] * u + q.V[i] * v);
+const to3 = (q, u, v) => q.fold ? q.fold(u, v, 0) : q.O.map((o, i) => o + q.U[i] * u + q.V[i] * v);
 const mm = q => q.pts.map(([u, v]) => [u * k, v * k]);
 const near = (a, b, e = 1e-3) => Math.abs(a - b) < e;
 
@@ -64,7 +64,7 @@ mkdirSync(outDir, { recursive: true });
 
 const ribs = parts.filter(q => q.g === 'wg' && q.O[1] > 0);
 const ribAt = (name, a) => ribs.find(q => q.name === name && near(q.O[1], a));
-const isUp = q => { const p = to3(q, 0, 0); return p[2] > M.WING.z(Math.max(Math.abs(p[1]), G.aK)); };
+const isUp = q => q.name === 'Horní pásnice nosníku';
 const RA = G.ribA, aK = G.aK, aTip = G.aTip, nB = RA.length - 1;
 const sxAt = a => G.sx(a);
 const cosP = (() => { const d = (G.sx(20.05) - G.sx(19.95)) / 0.1; return 1 / Math.hypot(1, d); })();
@@ -115,7 +115,7 @@ function clipX(P, xc, less) {
   const plan = q => q.pts.map(([u, v]) => { const p = to3(q, u, v); return [p[1] * k, -p[0] * k]; });
   const inWin = P => P.some(([y]) => Math.abs(y) < yl * k);
   const clipY = P => clipX(clipX(P, -yl * k, false), yl * k, true);
-  const sel = parts.filter(q => ['sw', 'wg', 'rf'].includes(q.g) && (q.g !== 'rf' || /Pásnice|spojka/.test(q.name)));
+  const sel = parts.filter(q => ['sw', 'wg', 'rf'].includes(q.g) && (q.g !== 'rf' || /ásnice|spojka/.test(q.name)));
   const PL = sel.map(q => ({ q, P: clipY(plan(q)) })).filter(o => o.P.length > 2 && inWin(o.P));
   const xs0 = -G.sx(0) * k;
   const xa = xs0 + 12, xb = xs0 - 40;
@@ -125,13 +125,13 @@ function clipX(P, xc, less) {
   b += poly(f, [[-T, xa], [T, xa], [T, xb], [-T, xb]], C.en, 0.5, 0.4);
   const col = q => q.g === 'wg' ? C.rib : q.g === 'sw' ? C.web : q.g === 'sp' ? C.en : q.name.startsWith('Spodní') ? '#D85A30' : C.fl;
   for (const g of ['wg', 'sw']) for (const o of PL.filter(o => o.q.g === g)) b += poly(f, o.P, col(o.q), 0.5, 0.4);
-  for (const o of PL.filter(o => o.q.g === 'rf' && isUp(o.q) && o.q.name === 'Pásnice nosníku')) b += poly(f, o.P, C.fl, 0.35, 0.5);
+  for (const o of PL.filter(o => o.q.name === 'Horní pásnice nosníku')) b += poly(f, o.P, C.fl, 0.35, 0.5);
   for (const o of PL.filter(o => o.q.name === 'Spodní spojka nosníku')) b += poly(f, o.P, '#D85A30', 0.45, 0.5, true);
   b += callout(f, [0, xs0 - 1], 380, 70, 'stojiny se potkají v ose (Λ), zářez páteře');
   b += callout(f, [G.aK * k * 0.55, -G.sx(G.aK * 0.55) * k + 4], 380, 110, 'horní pásnice – 1 díl, celé rozpětí');
   b += callout(f, [G.yD * k * 0.5, -G.sx(G.yD * 0.5) * k - 4], 380, 150, 'spodní spojka Λ pod stojinami');
-  b += callout(f, [G.aK * k, -G.sx(G.aK) * k - 25], 380, 190, 'kořenové žebro = běžné půlžebro');
-  b += callout(f, [-G.aK * k * 0.7, -G.sx(G.aK * 0.7) * k + 10], 380, 230, 'dolní pásnice od kořenového žebra');
+  b += callout(f, [G.aK * k, -G.sx(G.aK) * k - 18], 380, 190, 'kořenové žebro = běžné půlžebro');
+  b += callout(f, [(G.aK + 1.6) * k, -G.sx(G.aK + 1.6) * k], 380, 230, 'dolní pásnice od kořenového žebra');
   // stojina pravého křídla – díl
   const f2 = frame([30, 300, 620, 110], [W], 4);
   b += txt(20, 290, 'Stojina pravého křídla – 1 díl ve 2 vrstvách (od osy trupu ke koncovému žebru)', 'start', 'th');
@@ -142,43 +142,44 @@ function clipX(P, xc, less) {
   b += hdim(f2, u0, u1, Math.min(...vs), null, 18);
   b += vdim(f2, Math.min(...vs), at(u0, true), u0, `${n1(at(u0, true) - Math.min(...vs))}`, -12);
   b += vdim(f2, at(u1, false), at(u1, true), u1, null, 12);
-  b += callout(f2, [uK, at(uK, true)], 260, 452, 'lom vzepětí 5,6° na kořenovém žebru', 'start');
+  b += callout(f2, [uK, at(uK, true)], 200, 452, 'lom vzepětí 5,6° na kořenovém žebru', 'start');
+  b += callout(f2, [G.tenA[1] / cosP * k, at(G.tenA[1] / cosP * k, true)], 470, 452, '2 čepy do otvorů horní pásnice', 'start');
   b += txt(20, 476, 'Žádný spoj na tupo: stojina prochází kořenovým žebrem, pásnice jsou na stojinu lepené po celé délce.');
   console.log('root', sheet('2-koren-nosniku', 'Kořen nosníku: stojiny Λ, průběžná horní pásnice, spodní spojka', 490, b));
 }
 
 // =========== 3 — pásnice + žebra (lože a výřezy)
 {
-  const fl = parts.filter(q => q.name === 'Pásnice nosníku' && q.O[1] > 1 && isUp(q));
-  const segA = fl.find(q => q.O[1] > 12) || fl[3];
-  const S = mm(segA);
-  const f = frame([20, 40, 330, 120], [S], 8, false);
-  let b = txt(20, 24, 'Pásnice – úsek u jednoho žebra', 'start', 'th');
-  for (const Y of RA.filter(r => Math.abs(r - segA.O[1]) < 2.5)) for (const d of [-0.5, 0.5]) {
-    const yy = Y + d * T / k, uAt = v => ((yy - segA.O[1] - segA.V[1] * v) / segA.U[1]) * k;
-    b += pline(f, [[uAt(-P.CW / 2 / k - 0.3), -P.CW / 2 - 3], [uAt(P.CW / 2 / k + 0.3), P.CW / 2 + 3]], C.rib, 0.7, '3 2');
-  }
-  b += poly(f, S, C.fl, 0.45, 0.8);
-  const vs = S.map(p => p[1]), us = S.map(p => p[0]);
-  b += vdim(f, Math.min(...vs), Math.max(...vs), Math.max(...us), null, 14);
-  b += txt(20, 182, 'Výřezy 5 × 3 mm z obou okrajů') + txt(20, 198, 'čárkovaně žebro (šikmo, šíp 26°)');
-  // celá pásnice v půdorysu
-  const all = parts.filter(q => q.name === 'Pásnice nosníku' && isUp(q));
-  const PL = all.map(q => q.pts.map(([u, v]) => { const p = to3(q, u, v); return [p[1] * k, -p[0] * k]; }));
-  const f3 = frame([380, 40, 280, 120], PL, 4);
-  b += txt(380, 24, 'Horní pásnice – celý díl Λ, shora', 'start', 'th');
-  for (const P2 of PL) b += poly(f3, P2, C.fl, 0.55, 0.3);
-  const xs = PL.flat().map(p => p[0]), ys = PL.flat().map(p => p[1]);
-  b += hdim(f3, Math.min(...xs), Math.max(...xs), Math.min(...ys), null, 14) + vdim(f3, Math.min(...ys), Math.max(...ys), Math.max(...xs), null, 8);
-  b += txt(380, 182, `Šířka ${P.CW} mm u kořene → ${n1(G.cwA(G.aTip) * k)} mm u konce`) + txt(380, 198, 'Ohyb 5,6° na obou kořenových žebrech');
+  const up = parts.find(q => q.name === 'Horní pásnice nosníku');
+  const S = mm(up), H = up.holes.map(h => h.map(([x, y]) => [x * k, y * k]));
+  // detail: plochý obrys v okolí jednoho žebra (výřezy rovnoběžné s rovinou žebra)
+  const r = RA[Math.round(nB * 0.45)], cx = G.sx(r) * k, cy = r * k, win = 16;
+  const sw = Q => Q.map(([x, y]) => [y, x]);
+  const cut = P => sw(clipX(clipX(sw(clipX(clipX(P, cx - win, false), cx + win, true)), cy - win, false), cy + win, true));
+  const D = cut(S).map(([x, y]) => [y, -x]);
+  const f = frame([20, 40, 330, 130], [D], 4);
+  let b = txt(20, 24, 'Horní pásnice – výřezy u žebra (plochý díl, detail)', 'start', 'th');
+  const flatY = (x, Yt) => { let lo = 0, hi = 60; for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (up.fold(x, m)[1] < Yt) lo = m; else hi = m; } return (lo + hi) / 2; };
+  for (const d of [-0.5, 0.5]) { const L = [cx - win, cx + win].map(x => [flatY(x / k, r + d * T / k) * k, -x]); b += pline(f, L, C.rib, 0.7, '3 2'); }
+  b += poly(f, D, C.fl, 0.45, 0.8);
+  b += txt(20, 188, 'Výřez 3 mm hluboký, boky rovnoběžné s žebrem (šikmo 26°),') + txt(20, 204, 'šířka = tloušťka žebra + 0,1 mm; čárkovaně žebro');
+  // celý plochý díl
+  const R2 = Q => Q.map(([x, y]) => [y, -x]);
+  const f3 = frame([380, 40, 280, 130], [R2(S)], 4);
+  b += txt(380, 24, 'Horní pásnice – 1 díl Λ (plochý obrys)', 'start', 'th');
+  b += poly(f3, R2(S), C.fl, 0.55, 0.3);
+  for (const h of H) b += poly(f3, R2(h), C.web, 0.9, 0.4);
+  const xs = R2(S).map(p => p[0]), ys = R2(S).map(p => p[1]);
+  b += hdim(f3, Math.min(...xs), Math.max(...xs), Math.min(...ys), null, 14);
+  b += txt(380, 188, `Šířka ${P.CW} mm u kořene → ${n1(G.cwA(G.aTip) * k)} mm u konce;`) + txt(380, 204, 'v ose 4 otvory pro čepy stojin, ohyb 5,6° u kořene');
   // detail žebra u nosníku
   const a = RA[Math.round(nB * 0.45)], fr = ribAt('Půlžebro křídla přední', a), rr = ribAt('Půlžebro křídla zadní', a);
   const xs0 = sxAt(a) * k, FR = mm(fr).filter(p => p[0] > xs0 - 22), RR = mm(rr).filter(p => p[0] < xs0 + 22);
   const Fz = mm(fr).map(p => p[1]);
   const clipW = (Pp, lo, hi) => { let o = Pp; o = o.filter(p => p[0] >= lo && p[0] <= hi); return o; };
   const frC = clipW(mm(fr), xs0 - 26, xs0 + 1), rrC = clipW(mm(rr), xs0 - 1, xs0 + 26);
-  const f4 = frame([60, 230, 560, 170], [frC, rrC], 10);
-  b += txt(20, 216, 'Detail: žebro v místě nosníku (řez rovinou žebra)', 'start', 'th');
+  const f4 = frame([60, 250, 560, 170], [frC, rrC], 10);
+  b += txt(20, 236, 'Detail: žebro v místě nosníku (řez rovinou žebra)', 'start', 'th');
   b += poly(f4, frC, C.rib, 0.35, 0.8) + poly(f4, rrC, C.rib, 0.35, 0.8);
   const wx = (P.nW * T / 2 + 0.02 * k) / cosP;
   const zT = Math.max(...frC.map(p => p[1])), zB = Math.min(...frC.map(p => p[1]));
@@ -187,20 +188,20 @@ function clipX(P, xc, less) {
   b += poly(f4, [[xs0 - fwx, zT - T], [xs0 + fwx, zT - T], [xs0 + fwx, zT], [xs0 - fwx, zT]], C.fl, 0.25, 0.6, true);
   b += poly(f4, [[xs0 - fwx, zB], [xs0 + fwx, zB], [xs0 + fwx, zB + T], [xs0 - fwx, zB + T]], C.fl, 0.25, 0.6, true);
   b += vdim(f4, zT - T, zT, xs0 - fwx - 4, '3', -10);
-  b += callout(f4, [xs0, zT - T / 2], 470, 236, 'pásnice v loži, líc = obrys profilu');
-  b += callout(f4, [xs0, (zT + zB) / 2], 470, 425, 'stojina 2× 3 mm (řez)');
-  b += callout(f4, [xs0 - fwx + 1, zT - 0.5], 230, 236, 'zub žebra ve výřezu pásnice', 'end');
-  console.log('flange', sheet('3-pasnice-zebra', 'Pásnice zapuštěné do loží žeber', 450, b));
+  b += callout(f4, [xs0, zT - T / 2], 470, 256, 'pásnice v loži, líc = obrys profilu');
+  b += callout(f4, [xs0, (zT + zB) / 2], 470, 445, 'stojina 2× 3 mm (řez)');
+  b += callout(f4, [xs0 - fwx + 1, zT - 0.5], 230, 256, 'zub žebra ve výřezu pásnice', 'end');
+  console.log('flange', sheet('3-pasnice-zebra', 'Pásnice zapuštěné do loží žeber', 470, b));
 }
 
 // =========== 4 — pomocná lišta + zadní půlžebro
 {
-  const st = parts.filter(q => q.name === 'Pomocná lišta křídla' && q.O[1] > 12);
-  const S = mm(st[2]);
+  const st = parts.find(q => q.name === 'Pomocná lišta křídla' && to3(q, 0, 0)[1] > 0);
+  const S = mm(st);
   const f = frame([20, 40, 300, 80], [S], 6, false);
-  let b = txt(20, 24, 'Pomocná lišta (spodem, za nosníkem) – úsek', 'start', 'th') + poly(f, S, C.fl, 0.45, 0.8);
+  let b = txt(20, 24, 'Pomocná lišta (spodem, za nosníkem) – 1 díl na křídlo', 'start', 'th') + poly(f, S, C.fl, 0.45, 0.8);
   const vs = S.map(p => p[1]), us = S.map(p => p[0]);
-  b += vdim(f, Math.min(...vs), Math.max(...vs), Math.max(...us), '12', 14);
+  b += vdim(f, Math.min(...vs), Math.max(...vs), Math.max(...us), null, 14);
   b += txt(20, 140, 'Rovný pás 10 × 3 mm bez zářezů, jeden díl na křídlo');
   const a = RA[Math.round(nB * 0.45)], rr = ribAt('Půlžebro křídla zadní', a), fr = ribAt('Půlžebro křídla přední', a);
   const R = mm(rr), F = mm(fr);

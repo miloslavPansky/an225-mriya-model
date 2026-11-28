@@ -33,9 +33,16 @@
   function addPart(g, pts, O, U, V, o) {
     o = o || {}; const k = K;
     const sh = new THREE.Shape(pts.map(p => new THREE.Vector2(p[0] * k, p[1] * k)));
+    for (const h of o.holes || []) sh.holes.push(new THREE.Path(h.map(p => new THREE.Vector2(p[0] * k, p[1] * k))));
     const geo = new THREE.ExtrudeGeometry(sh, { depth: Tm, bevelEnabled: false, curveSegments: 2 }); geo.translate(0, 0, -Tm / 2);
-    const u = t3(U), v = t3(V), n = new THREE.Vector3().crossVectors(u, v), m = new THREE.Matrix4().makeBasis(u, v, n);
-    m.setPosition((O[0] - 42) * k, O[2] * k, O[1] * k); geo.applyMatrix4(m);
+    if (o.fold) {   // ohnutý díl (pásnice): plochý obrys → prostor po vrcholech, jedna síť bez čar v ohybu
+      const pa = geo.attributes.position;
+      for (let i = 0; i < pa.count; i++) { const q = o.fold(pa.getX(i) / k, pa.getY(i) / k, pa.getZ(i) / k); pa.setXYZ(i, (q[0] - 42) * k, q[2] * k, q[1] * k); }
+      geo.computeVertexNormals();
+    } else {
+      const u = t3(U), v = t3(V), n = new THREE.Vector3().crossVectors(u, v), m = new THREE.Matrix4().makeBasis(u, v, n);
+      m.setPosition((O[0] - 42) * k, O[2] * k, O[1] * k); geo.applyMatrix4(m);
+    }
     const me = new THREE.Mesh(geo, MAT[g]); me.userData = { g, name: o.name || '' }; GR[g].add(me);
     GR[g].add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), EDGE));
     if (o.noCount) return;
