@@ -33,6 +33,9 @@ jobs:
       - name: Kontrola geometrie (buildModel)
         run: node tests/model.test.mjs
 
+      - name: Vyrobitelnost dílů (materiál ≥ 3 mm, průniky dílů)
+        run: node tools/check/audit.mjs
+
       - name: Sestavení _site
         run: |
           SHORT="${GITHUB_SHA::7}"

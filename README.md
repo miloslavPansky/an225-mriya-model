@@ -73,10 +73,10 @@ Výkresy dílů: [`docs/parts/`](docs/parts/) (generuje `node tools/parts/sheets
 Rybí kost se stejnými pravidly jako křídlo (29. 11.); výkres [`docs/parts/7-ocas.svg`](docs/parts/7-ocas.svg). Souměrný profil, tloušťka ≥ 12 mm.
 - **Výškovka** (vodorovná, osa nosníku ve 40 % hloubky):
   - **stojina** každé poloviny 1 díl (2 vrstvy) od osy trupu po vnější bok kýlovky; v ose tvoří **Λ v zářezu páteře**, u osy je **hluboká** (8 mm od obrysu trupu) a drží ji **spodní spojka Λ** a **čep** v otvoru horní pásnice – stejný spoj s páteří jako kořen křídla,
-  - **horní pásnice 1 díl Λ** přes celé rozpětí (bez ohybu), **dolní pásnice 2 díly** od kořenového žebra; 1 vrstva, 16 → 12 mm, šikmé výřezy 3 mm pro žebra; pásnice jsou rovinné,
+  - **jen horní pásnice** – 1 díl Λ přes celé rozpětí (bez ohybu, rovinná), 1 vrstva, 16 → 12 mm, šikmé výřezy 3 mm pro žebra; dole nese stojina sama (T-nosník),
   - půlžebra v rozestupu žeber (i nad trupem), lože pro jádro pásnic.
-- **Kýlovka** (osa nosníku ve 30 % hloubky): **stojina** 1 díl (2 vrstvy) od spodní plochy výškovky po koncové žebro, **pásnice** po obou bocích (16 → 12 mm, výřezy pro žebra), **vodorovná půlžebra**, nahoře **celé koncové žebro**. Část pod výškovkou je **spodní deska kýlovky** (2 vrstvy) s 2 čepy do dolní pásnice výškovky (stojina kýlovky do ní nedosáhne – leží před ní).
-- **Spoj kýlovka–výškovka**: obě pásnice výškovky končí **patkou** ve tvaru žebra kýlovky (= dvě spodní žebra kýlovky). Stojina kýlovky se shora prostrčí **otvory v obou patkách** (tvarový spoj); boční síla na kýlovku se přenese jako dvojice sil v horní a dolní pásnici výškovky – přímo do jejího nosníku. Stojina výškovky prochází kýlovkou až k jejímu vnějšímu boku, 18 mm za stojinou kýlovky (nekříží se). Výztuhy K7 zrušeny.
+- **Kýlovka** (osa nosníku ve 30 % hloubky): **stojina** 1 díl (2 vrstvy) od vnitřního boku k **vnější pásnici** (jen vnější, 16 → 12 mm, výřezy pro žebra), **vodorovná půlžebra** s ložem jen z vnější strany, nahoře **celé koncové žebro** nasazené na **čep** stojiny (≥ 3 mm materiálu kolem otvoru). Část pod výškovkou je **spodní deska kýlovky** (2 vrstvy, čepy jen na vnitřní vrstvě) zasazená 2 čepy do dolní patky.
+- **Spoj kýlovka–výškovka**: horní pásnice výškovky končí **patkou** ve tvaru žebra kýlovky, pod stojinou výškovky je samostatná **dolní patka** (žebro kýlovky). Stojina kýlovky se shora prostrčí užším **čepem otvory v obou patkách** (tvarový spoj, ≥ 3 mm materiálu k boku); boční síla na kýlovku se přenese jako dvojice sil v horní a dolní pásnici výškovky – přímo do jejího nosníku. Stojina výškovky prochází kýlovkou až k jejímu vnějšímu boku, 18 mm za stojinou kýlovky (nekříží se). Výztuhy K7 zrušeny.
 
 ### Podvozek (zdvojený)
 - 2 podélné pásy se 7 koly (polohy a Ø podle bokorysu), ve vzdálenosti ±2,6 m, **zasazené hřebenem do žeber trupu** v oblasti podvozku (K10) – zatížení nesou žebra.
@@ -88,6 +88,8 @@ Rybí kost se stejnými pravidly jako křídlo (29. 11.); výkres [`docs/parts/7
 - Materiál mezi zářezem a okrajem ≥ 2 × tloušťka; nejužší místo dílu ≥ 5 mm (kontroluje test); vnější rohy R ≥ 1,5 mm; vstup do zářezu zkosit 0,5 mm.
 - Fréza Ø2 mm **downcut** (netrhá horní dýhu), odlehčení rohů (dog-bone) R 1 mm, můstky (tabs) u malých dílů, deska upnutá po celé ploše.
 - Pravidla jsou v kódu jako `AN225.RULES` (`js/model.js`).
+- **Kontrola vyrobitelnosti** `node tools/check/audit.mjs` (spouští ji i CI před nasazením): u každého dílu nejtenčí místo materiálu ≥ 3 mm (vepsané kružnice Ø 3 mm na rastru 0,2 mm) a pro každou dvojici dílů žádný průnik hmoty (vzorky v celé tloušťce po 0,7 mm) – kde se díly kříží, musí mít oba kompatibilní zářez.
+- **Hřebenové zářezy jsou v modelu** (29. 11.): páteř × žebra trupu (páteř shora do 40 %, žebro zdola do 60 % výšky v ose), Λ stojin křídla i výškovky se spojkami v zářezu páteře, boční podélníky v bočních zářezech žeber (podélník bez zářezů), podvozkové pásy × žebra (půlené), pásy × příčníky (půlené), příčníky a příďová noha v zářezu páteře zdola. Stojiny Λ končí v ose po vrstvách pravoúhle (nepřesahují do druhé stojiny). Lože pásnic a lišty v žebrech jsou rozšířená o posun šípu přes tloušťku žebra (dno výřezu je šikmé).
 
 ## Namáhání (orientační výpočet, `js/stress.js`)
 Prutová teorie; bříza: ohyb 40 MPa, lepený spoj na odtržení 2 MPa. Zatěžovací stavy pro hraní 8letého dítěte:
@@ -97,10 +99,10 @@ křídlo 30 N na konec, ocas 25 N svisle na každou kýlovku, kýlovka 20 N boč
 |---|---|---|
 | Křídlo – nejslabší průřez nosníku (~20 cm od osy, v místě výřezů) | 704 % (stojina se zářezy) | 78 % |
 | Křídlo – u boku trupu / v ose | – | 58 % / 9 % (hluboká stojina + spodní spojka) |
-| Lepení jazýčku vnějšího pylonu | 737 % | 85 % |
+| Lepení jazýčku vnějšího pylonu | 737 % | 95 % (jazýčky užší o šíp přes tloušťku pylonu) |
 | Spoj kýlovka–výškovka (otlačení stojiny v otvorech patek) | 274 % | 59 % |
 | Příčník podvozku | 98 % | ~0 % (nesou žebra) |
-| Výškovka u kořenového žebra / v polovině | 72 % | 46 % / 25 % |
+| Výškovka u kořenového žebra / v polovině | 72 % | 50 % / 30 % (jen horní pásnice) |
 | Páteř – ocasní část | – | 20 % |
 
 ## Odmítnuté / změněné varianty (historie rozhodnutí)
@@ -121,6 +123,7 @@ křídlo 30 N na konec, ocas 25 N svisle na každou kýlovku, kýlovka 20 N boč
 16. Pásnice (28. 11.): pásy zobrazené po polích a obdélníkové výřezy → **každý pás jeden díl i ve 3D**, výřezy šikmé rovnoběžně s žebry, horní pásnice bez výřezu ve špičce Λ, **čepy stojin** v otvorech horní pásnice; ve 3D jen skutečné obrysy dílů (žádné čáry uvnitř dílu).
 17. Lišta a trup (29. 11.): lišta s výřezy pro žebra (12 mm, jádro 6 mm); žebra trupu hladká a nad nejširším místem vypouklá, doplněná žebra v kořeni křídla se zářezem shora pro stojiny. Výplně pylonů ponechány: pylon se dotýká jen dolní pásnice (stojina je užší a pylon se nasazuje zespodu), bez výplní by lepený spoj nesl boční ohyb jen na ploše ~18 × 6 mm (namáhání ~10× víc než dovolené).
 18. Ocas (29. 11.): desky výškovky a kýlovek se zářezem a výztuhami K7 → **rybí kost jako křídlo**: Λ stojin výškovky v páteři (hluboká + spojka + čep), pásnice s patkami, stojina kýlovky v otvorech patek, spodní deska kýlovky s čepy. Hřbet trupu zaoblený (plochý jen na páteři), hladší profily žeber křídla, posun 3D náhledu pravým tlačítkem.
+19. Vyrobitelnost (29. 11.): výškovka jen horní pásnice, kýlovka jen vnější; koncové žebro kýlovky na čepu; kontrola `tools/check/audit.mjs` (materiál ≥ 3 mm, žádné průniky) – doplněny všechny hřebenové zářezy, opraveny tenké zuby (prstence u čela gondoly, příčník, páteř u kapotáže a na konci, podélník u ocasu, spodní deska kýlovky) a přesahy (stojiny v ose a u koncového žebra, výplně pylonu a lišta, lože ohnuté pásnice v kořeni).
 12. Zvažováno a zamítnuto (mění vzhled rybí kosti nebo není potřeba): plné vrstvené křídlo, plný konec křídla, vrstvená gondola, pojízdný podvozek, rozestup žeber 18 mm, předepsaný směr vlákna a křížení vrstev (M2, M3), bezpečnostní úpravy hračky (B1–B3).
 
 ## Otevřené body
@@ -128,7 +131,6 @@ křídlo 30 N na konec, ocas 25 N svisle na každou kýlovku, kýlovka 20 N boč
 - [ ] Ohyb horní pásnice 5,6° na kořenových žebrech – ověřit na zkušebním kusu.
 - [ ] Zářez páteře pro Λ stojin a spodní spojku – rozměry vyřeší generátor DXF.
 - [ ] Detaily podvozku (další krok ladění).
-- [ ] Ocas: otvor patky pro stojinu kýlovky má k vnějšímu boku jen ~3 mm materiálu – ověřit na zkušebním kusu.
 - [ ] Odhady v `js/an225-ref.js` označené [E] (rozchod podvozku, sklon kýlovek, délka gondol, tloušťka profilu u konce).
 - [ ] Generátor DXF: díly s číslováním, zářezy z průniků dílů, dog-bone, rozmístění na desky 1000 × 650 mm, šablona ohybu pásnice.
 - [ ] Návod ke stavbě (pořadí lepení).

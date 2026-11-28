@@ -281,7 +281,7 @@ function clipX(P, xc, less) {
 {
   const R2 = Q => Q.map(([x, y]) => [y, -x]);
   const up = parts.find(q => q.name === 'Horní pásnice výškovky');
-  const lo = parts.find(q => q.name === 'Dolní pásnice výškovky' && q.pts.some(p => p[1] > 0));
+  const lo = parts.find(q => q.name === 'Dolní patka kýlovky' && q.pts.some(p => p[1] > 0));
   const S = mm(up), H = up.holes.map(h => h.map(([x, y]) => [x * k, y * k]));
   let b = txt(20, 24, 'Horní pásnice výškovky – 1 díl Λ s patkami (plochý obrys, pohled shora)', 'start', 'th');
   const f = frame([20, 36, 640, 150], [R2(S)], 4);
@@ -289,18 +289,18 @@ function clipX(P, xc, less) {
   for (const h of H) b += poly(f, R2(h), C.web, 0.9, 0.4);
   const ys = S.map(p => p[1]);
   b += hdim(f, Math.min(...ys), Math.max(...ys), -Math.max(...S.map(p => p[0])), null, 14);
-  b += txt(20, 232, 'Šikmé výřezy 3 mm pro půlžebra; patka = žebro kýlovky; v patce otvor pro stojinu kýlovky, v ose otvory pro čepy stojin.');
+  b += txt(20, 232, 'Výškovka má jen horní pásnici; patka = žebro kýlovky s otvorem pro čep stojiny kýlovky; v ose otvory pro čepy stojin.');
   // dolní pásnice + uzel v detailu
   const L = mm(lo), HL = lo.holes.map(h => h.map(([x, y]) => [x * k, y * k]));
   const f2 = frame([20, 268, 300, 110], [R2(L)], 4);
-  b += txt(20, 262, 'Dolní pásnice (2 díly)', 'start', 'th') + poly(f2, R2(L), C.fl, 0.5, 0.5);
+  b += txt(20, 262, 'Dolní patka kýlovky (2 ks)', 'start', 'th') + poly(f2, R2(L), C.fl, 0.5, 0.5);
   for (const h of HL) b += poly(f2, R2(h), C.web, 0.9, 0.4);
-  b += txt(20, 396, 'Otvory: stojina kýlovky, 2 čepy spodní desky');
+  b += txt(20, 396, 'Otvory: čep stojiny kýlovky, 2 čepy spodní desky');
   // kýlovka – bokorys: stojina, pásnice, žebra, spodní deska, patky
   const yc = G.k ? 15.7 : 0;
   const fin = parts.filter(q => /kýlovky/.test(q.name) && to3(q, ...q.pts[0])[1] > 10);
   const side = q => q.pts.map(([u, v]) => { const p = to3(q, u, v); return [p[0] * k, p[2] * k]; });
-  const pat = parts.filter(q => /pásnice výškovky/.test(q.name)).map(q => q.pts.filter(([x, y]) => y > 14.5).map(([x]) => [x * k, q.O[2] * k]));
+  const pat = parts.filter(q => /Horní pásnice výškovky|Dolní patka/.test(q.name)).map(q => q.pts.filter(([x, y]) => y > 14.5).map(([x]) => [x * k, q.O[2] * k]));
   const all = fin.map(side);
   const f3 = frame([350, 268, 310, 200], all, 4);
   b += txt(350, 262, 'Kýlovka – bokorys (vnější pásnice nahoře)', 'start', 'th');
@@ -313,6 +313,6 @@ function clipX(P, xc, less) {
     else b += poly(f3, P, col[n] || C.rib, n === 'Pásnice kýlovky' ? 0.55 : 0.45, 0.5);
   }
   for (const P of pat) if (P.length) { const xs = P.map(p => p[0]); b += pline(f3, [[Math.min(...xs), P[0][1]], [Math.max(...xs), P[0][1]]], C.fl, 3, null); }
-  b += txt(350, 486, 'Zelené vodorovné = patky (pásnice výškovky),') + txt(350, 502, 'stojina kýlovky prochází oběma patkami.');
+  b += txt(350, 486, 'Zelené vodorovné = patky; kýlovka má jen vnější pásnici,') + txt(350, 502, 'stojina čepy do obou patek a do koncového žebra.');
   console.log('tail', sheet('7-ocas', 'Ocas – výškovka a kýlovka', 515, b));
 }
